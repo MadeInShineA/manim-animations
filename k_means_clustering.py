@@ -1,10 +1,7 @@
-from __future__ import absolute_import
 from manim import *
 from manim.utils.color import random_bright_color
 import random
 import numpy as np
-
-from networkx.algorithms.bipartite.cluster import clustering
 
 
 class KMeansClustering(Scene):
