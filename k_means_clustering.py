@@ -33,7 +33,7 @@ class KMeansClustering(Scene):
             dots.append(dot)
 
             self.add(axes, dot)
-            self.wait(0.1)
+            self.wait(0.05)
 
         self.wait(0.1)
 
@@ -98,18 +98,18 @@ class KMeansClustering(Scene):
                         dot_center,
                         color=closest_cluster.get_color(),
                     )
-                    self.play(Create(line_to_draw), run_time=0.05)
+                    self.play(Create(line_to_draw), run_time=0.01)
 
                     self.play(
                         dot.animate.set_color(closest_cluster.get_color()),
                         run_time=0.05,
                     )
 
-                    self.play(FadeOut(line_to_draw), run_time=0.05)
+                    self.play(FadeOut(line_to_draw), run_time=0.01)
                 else:
                     self.play(
                         dot.animate.set_color(closest_cluster.get_color()),
-                        run_time=0.05,
+                        run_time=0.01,
                     )
 
             clusters_moved = False
