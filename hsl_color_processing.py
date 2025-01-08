@@ -2,17 +2,172 @@ from manim import *
 
 
 class HSLColorProcessing(Scene):
+    def draw_hue_circle(self):
+        radius = 1.5
+        lines = 120
+        hue_circle = VGroup(
+            *[
+                Polygon(
+                    ORIGIN,
+                    radius
+                    * np.array(
+                        [
+                            np.cos(2 * PI * (i + 1.05) / lines),
+                            np.sin(2 * PI * (i + 1.05) / lines),
+                            0,
+                        ]
+                    ),
+                    radius
+                    * np.array(
+                        [np.cos(2 * PI * (i) / lines), np.sin(2 * PI * (i) / lines), 0]
+                    ),
+                    stroke_width=0,
+                    stroke_opacity=0,
+                    fill_opacity=1,
+                    fill_color=ManimColor.from_hsv([i / lines, 1.0, 1.0]),
+                )
+                for i in range(lines)
+            ]
+        )
+        counter = DecimalNumber(0).to_edge(DOWN)
+
+        animation_time = 3
+        counter.add_updater(lambda m, dt: m.increment_value(dt * 360 / animation_time))
+        self.add(counter)
+        self.play(
+            Create(hue_circle), run_time=animation_time, rate_func=rate_functions.linear
+        )
+        counter.suspend_updating()
+
+        counter.set_value(360)
+        self.wait()
+
+        return hue_circle, counter
+
+    def draw_saturation_rectangle(
+        self, original_color, positional_item, position_direction, buff
+    ):
+        width = 4.0
+        height = 1.0
+        rectangles = 200
+        color_h, color_s, color_v = original_color.to_hsv()
+        hsl_h, hsl_s, hsl_l = self.hsv_to_hsl(color_h, color_s, color_v)
+
+        saturation_rectangle = VGroup(
+            *[
+                Rectangle(
+                    width=width / rectangles,
+                    height=height,
+                    stroke_width=0,
+                    stroke_opacity=0,
+                    fill_opacity=1,
+                    fill_color=ManimColor.from_hsv(
+                        self.hsl_to_hsv(hsl_h, i / rectangles, hsl_l)
+                    ),
+                ).shift(RIGHT * (width / rectangles * i))
+                for i in range(rectangles)
+            ]
+        )
+
+        saturation_rectangle.next_to(positional_item, position_direction, buff=buff)
+
+        counter = DecimalNumber(0).to_edge(DOWN)
+
+        animation_time = 3
+        counter.add_updater(lambda m, dt: m.increment_value(dt / animation_time))
+        self.add(counter)
+        self.play(
+            Create(
+                saturation_rectangle,
+                run_time=animation_time,
+                rate_func=rate_functions.linear,
+            )
+        )
+        counter.suspend_updating()
+        counter.set_value(1.0)
+
+        self.wait()
+
+        return saturation_rectangle, counter
+
+    def hsl_to_hsv(self, h, s, l):
+        if l == 0:
+            return h, 0, 0
+        elif l == 1:
+            return h, 0, 1
+        else:
+            v = l + s * min(l, 1 - l)
+            s_hsv = 2 * (1 - l / v) if v != 0 else 0
+            return h, s_hsv, v
+
+    def hsv_to_hsl(self, h, s, v):
+        # Lightness calculation
+        l = v * (1 - s / 2)
+        if l == 0 or l == 1:
+            s_hsl = 0
+        else:
+            s_hsl = (v - l) / min(l, 1 - l)
+
+        return h, s_hsl, l
+
+    def draw_lightness_rectangle(
+        self, original_color, positional_item, position_direction, buff
+    ):
+        width = 4.0
+        height = 1.0
+        rectangles = 200
+        color_h, color_s, color_v = original_color.to_hsv()
+
+        hsl_h, hsl_s, hsl_l = self.hsv_to_hsl(color_h, color_s, color_v)
+
+        lightness_rectangle = VGroup(
+            *[
+                Rectangle(
+                    width=width / rectangles,
+                    height=height,
+                    stroke_width=0,
+                    stroke_opacity=0,
+                    fill_opacity=1,
+                    fill_color=ManimColor.from_hsv(
+                        self.hsl_to_hsv(hsl_h, hsl_s, i / rectangles)
+                    ),
+                ).shift(RIGHT * (width / rectangles * i))
+                for i in range(rectangles)
+            ]
+        )
+
+        lightness_rectangle.next_to(positional_item, position_direction, buff=buff)
+
+        counter = DecimalNumber(0).to_edge(DOWN)
+
+        animation_time = 3
+        counter.add_updater(lambda m, dt: m.increment_value(dt / animation_time))
+        self.add(counter)
+        self.play(
+            Create(
+                lightness_rectangle,
+                run_time=animation_time,
+                rate_func=rate_functions.linear,
+            )
+        )
+        counter.suspend_updating()
+        counter.set_value(1.0)
+
+        self.wait()
+
+        return lightness_rectangle, counter
+
     def construct(self):
         color_hex = "#00FFFF"
         color = ManimColor.from_hex(color_hex)
-        text = Text(color_hex)
+        color_hex_text = Text(color_hex)
 
-        rectangle = SurroundingRectangle(text, color=color, buff=0.2).set_fill(
-            opacity=1.0
-        )
+        rectangle = SurroundingRectangle(
+            color_hex_text, color=color, buff=0.2
+        ).set_fill(opacity=1.0)
         rectangle.set_z_index(-1)
 
-        self.play(Write(text))
+        self.play(Write(color_hex_text))
         self.play(DrawBorderThenFill(rectangle))
 
         h_text = Text("H")
@@ -35,47 +190,92 @@ class HSLColorProcessing(Scene):
         self.play(Create(right_arrow))
         self.play(Create(l_text))
 
+        items_to_fade_out = [
+            color_hex_text,
+            rectangle,
+            left_arrow,
+            down_arrow,
+            right_arrow,
+        ]
+
+        self.play([FadeOut(item) for item in items_to_fade_out])
+
+        hsl_text.generate_target()
+        hsl_text.target.shift(UP * 5)
+        self.play(MoveToTarget(hsl_text))
+
+        self.play(s_text.animate.set_color(GRAY), l_text.animate.set_color(GRAY))
+        self.wait()
+        hue_circle, counter = self.draw_hue_circle()
+        self.wait()
+
+        self.play(FadeOut(hue_circle, counter))
+
+        self.play(h_text.animate.set_color(GRAY), s_text.animate.set_color(WHITE))
+        saturation_text = Text(
+            "S represents the saturation of the color, ranging from 0 (gray) to 1 (full color).",
+            font_size=24,
+        )
+        self.play(Write(saturation_text))
+        saturation_rectangle, counter = self.draw_saturation_rectangle(
+            color, saturation_text, DOWN, 1.0
+        )
+
+        self.play(FadeOut(saturation_text, saturation_rectangle, counter))
+        self.play(s_text.animate.set_color(GRAY), l_text.animate.set_color(WHITE))
+        lightness_text = Text(
+            "L represents the lightness of the color, from 0 (black) to 1 (white).",
+            font_size=24,
+        )
+
+        self.play(Write(lightness_text))
+        lightness_rectangle, counter = self.draw_lightness_rectangle(
+            color, lightness_text, DOWN, 1.0
+        )
+
+        self.play(FadeOut(lightness_text, lightness_rectangle, counter))
+        self.play(l_text.animate.set_color(GRAY))
+
         self.wait()
 
 
 class DrawHueCircle(Scene):
     def construct(self):
-        theta = ValueTracker(0)
-
-        angle = always_redraw(
-            lambda: Arc(
-                radius=0.3,
-                angle=theta.get_value(),
-                arc_center=ORIGIN,
-                color=YELLOW,
-            )
+        radius = 1.5
+        lines = 120
+        wheel = VGroup(
+            *[
+                Polygon(
+                    ORIGIN,
+                    radius
+                    * np.array(
+                        [
+                            np.cos(2 * PI * (i + 1.05) / lines),
+                            np.sin(2 * PI * (i + 1.05) / lines),
+                            0,
+                        ]
+                    ),
+                    radius
+                    * np.array(
+                        [np.cos(2 * PI * (i) / lines), np.sin(2 * PI * (i) / lines), 0]
+                    ),
+                    stroke_width=0,
+                    stroke_opacity=0,
+                    fill_opacity=1,
+                    fill_color=ManimColor.from_hsv([i / lines, 1.0, 1.0]),
+                )
+                for i in range(lines)
+            ]
         )
+        ctr = DecimalNumber(0).to_edge(DOWN)
 
-        circle = always_redraw(
-            lambda: Arc(
-                radius=1.0,
-                angle=theta.get_value(),
-                arc_center=ORIGIN,
-                color=ManimColor.from_hsv(np.array([theta.get_value() / 2 / PI, 1, 1])),
-            )
+        animation_time = 3
+        ctr.add_updater(lambda m, dt: m.increment_value(dt * 360 / animation_time))
+        self.add(ctr)
+        self.play(
+            Create(wheel), run_time=animation_time, rate_func=rate_functions.linear
         )
+        ctr.suspend_updating()
 
-        angle_line = always_redraw(
-            lambda: Line(
-                start=ORIGIN,
-                end=RIGHT * np.cos(theta.get_value()) + UP * np.sin(theta.get_value()),
-            )
-        )
-
-        text = always_redraw(
-            lambda: Text(str(round(theta.get_value() * 180 / PI, 2)) + " °").next_to(
-                ORIGIN, DOWN, buff=1.5
-            )
-        )
-
-        radius_line = Line(ORIGIN, np.array([1, 0, 0]))
-
-        self.add(text, circle, angle, angle_line, radius_line)
-        self.play(theta.animate(rate_func=linear, run_time=1).set_value(2 * PI))
-
+        ctr.set_value(360)
         self.wait()
