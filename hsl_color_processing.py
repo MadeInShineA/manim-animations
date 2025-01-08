@@ -135,16 +135,29 @@ class HSLColorProcessing(Scene):
         self.play(Write(color_hex_text))
         self.play(DrawBorderThenFill(rectangle))
 
-        h_text = Text("H")
-        s_text = Text("S")
-        l_text = Text("L")
+        s_text = Text("S").next_to(rectangle, DOWN, buff=1.0)
+        h_text = Text("H").next_to(s_text, LEFT, buff=1.5)
+        l_text = Text("L").next_to(s_text, RIGHT, buff=1.5)
 
         hsl_text = VGroup(h_text, s_text, l_text)
-        hsl_text.arrange(RIGHT, buff=0.5).next_to(rectangle, DOWN, buff=1.5)
 
-        left_arrow = Arrow(start=rectangle.get_bottom(), end=h_text.get_top())
-        down_arrow = Arrow(start=rectangle.get_bottom(), end=s_text.get_top())
-        right_arrow = Arrow(start=rectangle.get_bottom(), end=l_text.get_top())
+        arrow_config = {"stroke_width": 4, "tip_length": 0.25, "buff": 0}
+
+        left_arrow = Arrow(
+            start=rectangle.get_bottom(),
+            end=h_text.get_top() + 0.1 * UR,
+            **arrow_config,
+        )
+        down_arrow = Arrow(
+            start=rectangle.get_bottom(),
+            end=s_text.get_top() + 0.1 * UP,
+            **arrow_config,
+        )
+        right_arrow = Arrow(
+            start=rectangle.get_bottom(),
+            end=l_text.get_top() + 0.1 * UL,
+            **arrow_config,
+        )
 
         self.play(Create(left_arrow))
         self.play(Create(h_text))
