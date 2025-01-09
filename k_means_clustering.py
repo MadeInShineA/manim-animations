@@ -6,12 +6,22 @@ import numpy as np
 
 class KMeansClustering(Scene):
     def construct(self):
-        axes = Axes(
-            x_range=[0, 10, 1],
-            y_range=[0, 10, 1],
-            tips=False,
-            axis_config={"include_numbers": True},
-        ).add_coordinates()
+        k_means_text = Text("K means clustering")
+        self.play(Write(k_means_text))
+        self.wait()
+
+        self.play(k_means_text.animate.to_edge(UP))
+
+        axes = (
+            Axes(
+                x_range=[0, 10, 1],
+                y_range=[0, 10, 1],
+                tips=False,
+                axis_config={"include_numbers": True},
+            )
+            .add_coordinates()
+            .next_to(k_means_text, DOWN, buff=0.75)
+        ).scale(0.8)
 
         self.play(Create(axes))
         self.wait(0.1)
@@ -44,6 +54,12 @@ class KMeansClustering(Scene):
 
         dots_used_for_cluster = set()
 
+        cluster_text = Text(
+            "Select k random points to promote as clusters", font_size=22
+        ).next_to(k_means_text, DOWN, buff=0.2)
+        self.play(Write(cluster_text))
+        self.wait()
+
         for i in range(number_of_clusters):
             dot = random.choice(dots)
 
@@ -54,13 +70,19 @@ class KMeansClustering(Scene):
 
             cluster_color = available_cluster_colors.pop()
 
-            cluster_dot = Dot(dot.get_center(), radius=0.3)
+            cluster_dot = Dot(dot.get_center(), radius=0.2)
             self.add(axes, cluster_dot)
             self.play(cluster_dot.animate.set_color(cluster_color))
 
             cluster_dots.append(cluster_dot)
 
         number_of_itterations = 3
+        self.play(FadeOut(cluster_text))
+
+        point_coloring_text = Text(
+            "Assign each point to it's closest cluster", font_size=22
+        ).next_to(k_means_text, DOWN, buff=0.2)
+        self.play(Write(point_coloring_text))
 
         for itteration in range(number_of_itterations):
             point_num_coordinates_sum_per_cluster = {
@@ -110,6 +132,16 @@ class KMeansClustering(Scene):
                     )
 
             clusters_moved = False
+
+            if itteration == 0:
+                move_cluster_center_text = Text(
+                    "Move the cluster points to their new center", font_size=22
+                ).next_to(k_means_text, DOWN, buff=0.2)
+
+                self.play(FadeOut(point_coloring_text))
+                self.play(Write(move_cluster_center_text))
+                self.wait()
+
             for cluster_dot in cluster_dots:
                 new_coordinates = (
                     point_num_coordinates_sum_per_cluster[cluster_dot][
@@ -120,9 +152,17 @@ class KMeansClustering(Scene):
 
                 if tuple(new_coordinates) != tuple(cluster_dot.get_center()):
                     clusters_moved = True
-
                     self.play(cluster_dot.animate.move_to(new_coordinates))
                     self.wait(0.1)
+
+            if itteration == 0:
+                repeat_text = Text(
+                    "Repeat until the clusters stop moving or the number of itteration wanted was reached",
+                    font_size=22,
+                ).next_to(k_means_text, DOWN, buff=0.2)
+                self.play(FadeOut(move_cluster_center_text))
+                self.play(Write(repeat_text))
+                self.wait()
 
             if not clusters_moved:
                 break
