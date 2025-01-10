@@ -80,9 +80,12 @@ class KMeansClustering(Scene):
         self.play(FadeOut(cluster_text))
 
         point_coloring_text = Text(
-            "Assign each point to it's closest cluster", font_size=22
+            "Assign each point to its closest cluster", font_size=22
         ).next_to(k_means_text, DOWN, buff=0.2)
         self.play(Write(point_coloring_text))
+
+        cluster_dots = sorted(cluster_dots, key=lambda p: p.get_center()[0])
+        dots = sorted(dots, key=lambda p: p.get_center()[0])
 
         for itteration in range(number_of_itterations):
             point_num_coordinates_sum_per_cluster = {
@@ -157,7 +160,7 @@ class KMeansClustering(Scene):
 
             if itteration == 0:
                 repeat_text = Text(
-                    "Repeat until the clusters stop moving or the number of itteration wanted was reached",
+                    "Repeat until the clusters stop moving or the number of iteration wanted was reached",
                     font_size=22,
                 ).next_to(k_means_text, DOWN, buff=0.2)
                 self.play(FadeOut(move_cluster_center_text))
