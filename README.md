@@ -24,8 +24,11 @@ https://github.com/user-attachments/assets/960c78a3-e609-4b57-a9b1-b61458737884
 
 ## K means clustering
 
-https://github.com/user-attachments/assets/871d3075-98bf-494d-9bfd-4de801b22966
+https://github.com/user-attachments/assets/c6800cfb-f4c0-4765-b1fd-5284cd8db85e
 
+## HSL color processing
+
+https://github.com/user-attachments/assets/2fa34492-d911-4f92-a14d-c4fbb97303eb
 
 
 
