@@ -9,7 +9,6 @@ This repository contains different animations made with manim community edition
 https://github.com/user-attachments/assets/ef0054be-ce4e-4f92-a96f-9a45c22d6344
 
 
-
 ## Min max
 
 
@@ -30,5 +29,26 @@ https://github.com/user-attachments/assets/c6800cfb-f4c0-4765-b1fd-5284cd8db85e
 
 https://github.com/user-attachments/assets/2fa34492-d911-4f92-a14d-c4fbb97303eb
 
+## Complex oscillator
+This video represents the following complex oscillator:
 
+## $2 e^{i (t+ \frac{\pi}{4})}$
+
+
+https://github.com/user-attachments/assets/6900f946-186a-40bc-ad24-0dc755197900
+
+
+
+
+This video represents the following complex oscillator:
+
+## $e^{i (2t + \frac{\pi}{3})} + 3e^{i (2t + \pi)}$
+
+https://github.com/user-attachments/assets/9ebcc9cb-24e2-4815-9e53-caec6326252a
+
+This video represents the following complex oscillator:
+
+## $e^{i (2t + \frac{\pi}{3})} + 3e^{i (5t + \pi)}$
+
+https://github.com/user-attachments/assets/c401ad60-3da7-4600-9d4a-2f5a30ac4945
 
