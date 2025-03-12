@@ -25,9 +25,14 @@ class ComplexOscillator(Scene):
                 (1j * (2 * t + cmath.pi))
             )
 
+        def get_z_value_at_t_3(t) -> complex:
+            return cmath.exp((1j * (2 * t + cmath.pi / 3))) + 3 * cmath.exp(
+                (1j * (5 * t + cmath.pi))
+            )
+
         def update_dot(m, dt):
             t = self.renderer.time
-            z_t = get_z_value_at_t(t)
+            z_t = get_z_value_at_t_3(t)
             m.move_to([z_t.real, z_t.imag, 0])  # Move dot to new position
 
         dot.add_updater(update_dot)
