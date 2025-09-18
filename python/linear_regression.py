@@ -139,9 +139,10 @@ class LinearRegression(Scene):
                 Tex(text, font_size=32).set_color(color).move_to(spacer.get_center())
             )
 
-        # Status (n & iteration) anchored UNDER the step label - include iteration and MSE
+        # Status (iteration) anchored UNDER the step label - include iteration, eta, and MSE
         status_probe = Tex(
-            "n = 00 • Iteration 0 • a = 0.000, b = 0.000 • MSE = 0.000", font_size=26
+            r"Iteration 0 $\cdot$ $\eta$ = 0.350 $\cdot$ a = 0.000, b = 0.000 $\cdot$ MSE = 0.000",
+            font_size=26,
         )
         status_spacer = Rectangle(
             width=0.001, height=status_probe.height, stroke_width=0, fill_opacity=0
@@ -222,11 +223,16 @@ class LinearRegression(Scene):
             .scale(1.3)  # Much bigger
         )
         x_label = Tex(r"x", font_size=32)
-        y_label = Tex(r"y", font_size=32).rotate(PI/2)
+        y_label = Tex(r"y", font_size=32).rotate(PI / 2)
         x_label.next_to(axes.x_axis, DOWN, buff=0.2)
         y_label.next_to(axes.y_axis, LEFT, buff=0.2)
         axes_labels = VGroup(x_label, y_label)
-        dots = VGroup(*[Dot(axes.c2p(x, y), radius=0.065, color=BLUE_C, fill_opacity=0.7) for x, y in zip(xs, ys)])
+        dots = VGroup(
+            *[
+                Dot(axes.c2p(x, y), radius=0.065, color=BLUE_C, fill_opacity=0.7)
+                for x, y in zip(xs, ys)
+            ]
+        )
         graph_cell = VGroup(axes, axes_labels, dots)
 
         def line_from_params(m, b, color=ORANGE, width=6):
@@ -386,7 +392,8 @@ class LinearRegression(Scene):
         width_scale = available_width / grid.width
         height_scale = available_height / grid.height
         scale_factor = (
-            min(width_scale, height_scale) * 0.85  # Use 85% of available space for better fit
+            min(width_scale, height_scale)
+            * 0.85  # Use 85% of available space for better fit
         )
 
         grid.scale(scale_factor)
@@ -396,14 +403,17 @@ class LinearRegression(Scene):
         grid.set_x(0)
 
         # Center formulas within the top-right cell after scaling
-        tr_cell_center = tr_cell.get_center()
-        formulas_col.move_to(tr_cell_center)
+        # Use the tr_cell as reference and center the formulas within it
+        formulas_col.move_to(tr_cell.get_center())
+
+        # --- Eta tracker (needed for status display)
+        eta_tracker = ValueTracker(0.35)  # bigger steps
 
         # --- Initial step + status text
         set_step_label(r"Step 1: Model $\hat{y} = a x + b$", BLUE_E)
         status.become(
             Tex(
-                f"n = {n}  •  Iteration 0  •  a = {a_plot:.3f}, b = {b_plot:.3f}  •  MSE = {mse0:.3f}",
+                rf"Iteration 0 $\cdot$ $\eta$ = {eta_tracker.get_value():.3f} $\cdot$ a = {a_plot:.3f}, b = {b_plot:.3f} $\cdot$ MSE = {mse0:.3f}",
                 font_size=26,
             ).move_to(status_spacer.get_center())
         )
@@ -464,14 +474,7 @@ class LinearRegression(Scene):
                 run_time=T_RESTORE,
             )
 
-        # --- Eta + readout (under formulas)
-        eta_tracker = ValueTracker(0.35)  # bigger steps
-        eta_label = always_redraw(
-            lambda: MathTex(
-                r"\eta = ", f"{eta_tracker.get_value():.3f}", font_size=26
-            ).next_to(formulas_col, DOWN, buff=0.08, aligned_edge=LEFT)
-        )
-
+        # --- Readout (under formulas)
         def info_readout(iter_no, a, b):
             return Tex(
                 "",  # Remove iteration display
@@ -479,7 +482,7 @@ class LinearRegression(Scene):
             ).next_to(formulas_col, DOWN, buff=0.25, aligned_edge=LEFT)
 
         readout = info_readout(0, a_plot, b_plot)
-        self.play(FadeIn(eta_label), FadeIn(readout), run_time=0.45)
+        self.play(FadeIn(readout), run_time=0.45)
         self.wait(T_WAIT)
 
         # Seed displays
@@ -528,35 +531,26 @@ class LinearRegression(Scene):
 
         # ---- Optimization loop (5 steps)
         for i in range(1, 5 + 1):
-            # Perform gradient calculation and display twice in the first iteration
-            if i == 1:
-                # First pass
-                da_s, db_s = grads_scaled(a_s, b_s)
-                a_disp, b_disp = scaled_to_plot(a_s, b_s)
-                da_disp, db_disp = grads_display(a_disp, b_disp)
+            # Calculate gradients once per iteration
+            da_s, db_s = grads_scaled(a_s, b_s)
+            a_disp, b_disp = scaled_to_plot(a_s, b_s)
+            da_disp, db_disp = grads_display(a_disp, b_disp)
 
-                # Second pass (identical to first)
-                da_s, db_s = grads_scaled(a_s, b_s)
-                a_disp, b_disp = scaled_to_plot(a_s, b_s)
-                da_disp, db_disp = grads_display(a_disp, b_disp)
-            else:
-                da_s, db_s = grads_scaled(a_s, b_s)
-                a_disp, b_disp = scaled_to_plot(a_s, b_s)
-                da_disp, db_disp = grads_display(a_disp, b_disp)
+            # Skip gradient display for first iteration (already shown in setup)
+            if i > 1:
+                focus_on(
+                    grad_a_group, r"Step 3: Gradient $\partial J/\partial a$", YELLOW_E
+                )
+                self.play(grad_a_val.animate.set_value(da_disp), run_time=T_NUM)
+                restore_all()
+                self.wait(T_WAIT)
 
-            focus_on(
-                grad_a_group, r"Step 3: Gradient $\partial J/\partial a$", YELLOW_E
-            )
-            self.play(grad_a_val.animate.set_value(da_disp), run_time=T_NUM)
-            restore_all()
-            self.wait(T_WAIT)
-
-            focus_on(
-                grad_b_group, r"Step 3: Gradient $\partial J/\partial b$", YELLOW_E
-            )
-            self.play(grad_b_val.animate.set_value(db_disp), run_time=T_NUM)
-            restore_all()
-            self.wait(T_WAIT)
+                focus_on(
+                    grad_b_group, r"Step 3: Gradient $\partial J/\partial b$", YELLOW_E
+                )
+                self.play(grad_b_val.animate.set_value(db_disp), run_time=T_NUM)
+                restore_all()
+                self.wait(T_WAIT)
 
             if np.hypot(da_s, db_s) < TOL and i > 2:
                 note = Tex("Converged (small gradient)", font_size=24, color=GREY_B)
@@ -576,7 +570,7 @@ class LinearRegression(Scene):
                 b_val.animate.set_value(b_plot),
                 status.animate.become(
                     Tex(
-                        f"n = {n}  •  Iteration {i}  •  a = {a_plot:.3f}, b = {b_plot:.3f}  •  MSE = {mse(a_plot, b_plot):.3f}",
+                        rf"Iteration {i} $\cdot$ $\eta$ = {eta_tracker.get_value():.3f} $\cdot$ a = {a_plot:.3f}, b = {b_plot:.3f} $\cdot$ MSE = {mse(a_plot, b_plot):.3f}",
                         font_size=26,
                     ).move_to(status_spacer.get_center())
                 ),
@@ -606,6 +600,7 @@ class LinearRegression(Scene):
                     self.play(FadeOut(trail[0], run_time=0.14))
                     trail.remove(trail[0])
             self.play(Create(new_line), run_time=T_LINE)
+            self.wait(T_WAIT)
 
             focus_on(cost_group, r"Step 2: Cost $J(a,b)$", GREEN_E)
             new_errs = residual_segments(a_plot, b_plot)
@@ -654,7 +649,6 @@ class LinearRegression(Scene):
             br_cell,  # mse + axis labels only
             mse_graph,
             status,
-            eta_label,
             step_label,
             spacer,
             status_spacer,
