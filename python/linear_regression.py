@@ -33,116 +33,168 @@ class LinearRegression(Scene):
                     tokens.append(seg)
                 else:
                     tokens.extend(seg.split(" "))
+
             lines: list[str] = []
             cur = ""
-            for tok in tokens:
+            for i, tok in enumerate(tokens):
                 cand = (cur + " " + tok).strip() if cur else tok
                 if cur and Tex(cand, font_size=font_size).width > max_width:
                     lines.append(cur)
                     cur = tok
                 else:
                     cur = cand
+
             if cur:
                 lines.append(cur)
+
+            # Avoid orphaned words: if last line has only 1-2 words, redistribute
+            if len(lines) > 1 and len(lines[-1].split()) <= 2:
+                last_words = lines[-1].split()
+                if len(lines) > 1:
+                    # Move words from previous line to last line to balance
+                    prev_words = lines[-2].split()
+                    if len(prev_words) > 3:  # Only if previous line has enough words
+                        move_count = min(2, len(prev_words) - 2)
+                        moved_words = prev_words[-move_count:]
+                        lines[-2] = " ".join(prev_words[:-move_count])
+                        lines[-1] = " ".join(moved_words + last_words)
+
             return VGroup(*[Tex(ln, font_size=font_size) for ln in lines]).arrange(
                 DOWN, aligned_edge=LEFT, buff=0.28
             )
 
         # ===================== Screen 1: What is Linear Regression? =====================
-        desc_heading = Tex("What is Linear Regression?", font_size=40)
-        desc_heading.next_to(title, DOWN, buff=0.5).to_edge(LEFT, buff=0.5)
-        self.play(Write(desc_heading), run_time=1.2)
+        desc_heading = Tex(
+            r"\textbf{What is Linear Regression?}",
+            font_size=42,
+        )
+        desc_heading.next_to(title, DOWN, buff=0.7)
+        self.play(Write(desc_heading), run_time=2.0)
 
         desc_text = (
-            "Linear regression finds the best straight line through data points to predict one variable from another. "
-            r"Given data pairs $(x_i, y_i)$, we find the line $\hat{y} = ax + b$ that minimizes prediction errors. "
-            "This makes it one of the most fundamental tools in statistics and machine learning."
+            r"\textbf{Linear regression} discovers the \textbf{optimal straight line} through data points to predict one variable from another. "
+            r"Given data pairs $(x_i, y_i)$, we find the \textbf{best-fit line} $\hat{y} = ax + b$ that \textbf{minimizes prediction errors}. "
+            r"This powerful technique forms the \textbf{foundation} of statistics and machine learning, enabling us to make \textbf{data-driven predictions} "
+            r"and uncover \textbf{hidden relationships} in complex datasets."
         )
         desc_group = wrap_text_tex(desc_text, 34, config.frame_width - 1)
-        desc_group.next_to(desc_heading, DOWN, buff=0.4).to_edge(LEFT, buff=0.5)
-        self.play(Write(desc_group), run_time=3.5)
-        self.wait(2.5)
-        self.play(FadeOut(desc_heading), FadeOut(desc_group), run_time=1.0)
+        desc_group.next_to(desc_heading, DOWN, buff=0.5)
+        self.play(Write(desc_group), run_time=5.0)
+        self.wait(6.0)
+
+        # Ensure all screen 1 elements are properly tracked and removed
+        screen1_elements = VGroup(desc_heading, desc_group)
+        self.play(FadeOut(screen1_elements), run_time=1.5)
 
         # ===================== Screen 2: Real-World Applications =====================
-        usecases_heading = Tex("Real-World Applications", font_size=40)
-        usecases_heading.next_to(title, DOWN, buff=0.5).to_edge(LEFT, buff=0.5)
-        self.play(Write(usecases_heading), run_time=1.2)
+        usecases_heading = Tex(
+            r"\textbf{Real-World Applications}",
+            font_size=42,
+        )
+        usecases_heading.next_to(title, DOWN, buff=0.7)
+        self.play(Write(usecases_heading), run_time=2.0)
 
-        usecases_intro = "Linear regression powers countless applications across industries:"
-        intro_text = Tex(usecases_intro, font_size=32)
-        intro_text.next_to(usecases_heading, DOWN, buff=0.3).to_edge(LEFT, buff=0.5)
-        self.play(Write(intro_text), run_time=1.8)
+        usecases_intro = r"Linear regression \textbf{transforms industries} through \textbf{predictive insights}:"
+        intro_text = Tex(usecases_intro, font_size=34)
+        intro_text.next_to(usecases_heading, DOWN, buff=0.4)
+        self.play(Write(intro_text), run_time=2.5)
 
         usecases = [
-            r"\textbullet{} \textbf{Finance:} Stock price prediction, risk assessment",
-            r"\textbullet{} \textbf{Healthcare:} Drug dosage optimization, disease progression",
-            r"\textbullet{} \textbf{Marketing:} Sales forecasting, customer lifetime value",
-            r"\textbullet{} \textbf{Engineering:} System calibration, quality control",
-            r"\textbullet{} \textbf{Research:} Experimental analysis, hypothesis testing",
+            r"\textbullet{} \textbf{Finance:} \textbf{Stock price prediction}, risk assessment, portfolio optimization",
+            r"\textbullet{} \textbf{Healthcare:} \textbf{Drug dosage optimization}, disease progression modeling",
+            r"\textbullet{} \textbf{Marketing:} \textbf{Sales forecasting}, customer lifetime value prediction",
+            r"\textbullet{} \textbf{Engineering:} \textbf{System calibration}, quality control, ML algorithms",
+            r"\textbullet{} \textbf{Research:} \textbf{Experimental analysis}, hypothesis testing, trend identification",
         ]
         bullets = VGroup()
         prev = intro_text
+        industry_colors = [WHITE, WHITE, WHITE, WHITE, WHITE]
         for i, u in enumerate(usecases):
-            b = Tex(u, font_size=30)
-            b.next_to(prev, DOWN, buff=0.25, aligned_edge=LEFT)
-            self.play(Write(b), run_time=0.9)
+            b = Tex(u, font_size=32)
+            # Add color coding for different industries
+            b.set_color_by_tex("Finance", industry_colors[0])
+            b.set_color_by_tex("Healthcare", industry_colors[1])
+            b.set_color_by_tex("Marketing", industry_colors[2])
+            b.set_color_by_tex("Engineering", industry_colors[3])
+            b.set_color_by_tex("Research", industry_colors[4])
+            b.next_to(prev, DOWN, buff=0.3, aligned_edge=LEFT)
+            self.play(Write(b), run_time=1.5)
             bullets.add(b)
             prev = b
 
-        self.wait(2.0)
-        self.play(
-            FadeOut(usecases_heading), FadeOut(intro_text), *[FadeOut(b) for b in bullets], run_time=1.0
-        )
+        # Create proper vertical layout and center horizontally
+        bullet_group = VGroup(intro_text, *bullets)
+        # Center the complete screen 2 content as a whole
+        screen2_content = VGroup(usecases_heading, bullet_group)
+
+        self.wait(6.0)
+
+        # Ensure all screen 2 elements are properly tracked and removed
+        self.play(FadeOut(screen2_content), run_time=1.5)
 
         # ===================== Screen 3: Gradient Descent Algorithm =====================
-        steps_title = Tex("Gradient Descent Algorithm", font_size=40, color=ORANGE)
-        steps_title.next_to(title, DOWN, buff=0.5).to_edge(LEFT, buff=0.5)
-        self.play(Write(steps_title), run_time=0.8)
+        steps_title = Tex(
+            r"\textbf{Gradient Descent Algorithm}",
+            font_size=42,
+        )
+        steps_title.next_to(title, DOWN, buff=0.7)
+        self.play(Write(steps_title), run_time=1.5)
 
-        steps_intro = "We'll use gradient descent to find optimal parameters $a$ and $b$:"
-        intro_alg = Tex(steps_intro, font_size=32)
-        intro_alg.next_to(steps_title, DOWN, buff=0.3).to_edge(LEFT, buff=0.5)
-        self.play(Write(intro_alg), run_time=1.0)
+        steps_intro = r"We'll use \textbf{gradient descent} to \textbf{intelligently navigate} toward optimal parameters $a$ and $b$:"
+        intro_alg = Tex(steps_intro, font_size=34)
+        intro_alg.next_to(steps_title, DOWN, buff=0.4)
+        self.play(Write(intro_alg), run_time=1.8)
 
         steps = [
-            r"1.\ \textbf{Define Model:} $\hat{y} = a x + b$ (linear relationship)",
-            r"2.\ \textbf{Set Cost Function:} $J(a,b)=\frac{1}{n}\sum (y_i-\hat{y}_i)^2$ (minimize errors)",
-            r"3.\ \textbf{Calculate Gradients:} $\frac{\partial J}{\partial a}$ and $\frac{\partial J}{\partial b}$ (find slope)",
-            r"4.\ \textbf{Update Parameters:} $a \leftarrow a-\eta\,\frac{\partial J}{\partial a}$, $b \leftarrow b-\eta\,\frac{\partial J}{\partial b}$",
-            r"5.\ \textbf{Repeat:} Until cost $J$ converges to minimum",
+            r"1.\ \textbf{Define Model:} $\hat{y} = a x + b$ \textbf{(establish linear relationship)}",
+            r"2.\ \textbf{Set Cost Function:} $J(a,b)=\frac{1}{n}\sum (y_i-\hat{y}_i)^2$ \textbf{(quantify errors)}",
+            r"3.\ \textbf{Calculate Gradients:} $\frac{\partial J}{\partial a}$ and $\frac{\partial J}{\partial b}$ \textbf{(determine steepest descent)}",
+            r"4.\ \textbf{Update Parameters:} $a \leftarrow a-\eta\,\frac{\partial J}{\partial a}$, $b \leftarrow b-\eta\,\frac{\partial J}{\partial b}$ \textbf{(intelligent step)}",
+            r"5.\ \textbf{Iterate:} Repeat until cost $J$ \textbf{converges to global minimum}",
         ]
-        COLS = [BLUE_C, GREEN_C, YELLOW_C, ORANGE, GREY_B]
+        # Match colors with graph screen - BLUE_C for model, GREEN_C for cost, YELLOW_C for gradients, ORANGE for updates
         step_group = VGroup()
         prev = intro_alg
-        for i, (text, col) in enumerate(zip(steps, COLS)):
-            line = Tex(text, font_size=30)
-            # Color specific parts of each step
-            if i == 0:  # Model
+        for i, text in enumerate(steps):
+            line = Tex(text, font_size=32)
+            # Enhanced color coding to match graph screen colors exactly
+            if i == 0:  # Model - matches yhat_group in graph (BLUE_C)
                 line.set_color_by_tex(r"\hat{y}", BLUE_C)
-                line.set_color_by_tex("Model", BLUE_C)
-            elif i == 1:  # Cost function
+                line.set_color_by_tex("Define Model", BLUE_C)
+                line.set_color_by_tex("establish linear relationship", BLUE_C)
+            elif i == 1:  # Cost function - matches cost_group in graph (GREEN_C)
                 line.set_color_by_tex("J", GREEN_C)
-                line.set_color_by_tex("Cost Function", GREEN_C)
-            elif i == 2:  # Gradients
+                line.set_color_by_tex("Set Cost Function", GREEN_C)
+                line.set_color_by_tex("quantify prediction errors", GREEN_C)
+            elif i == 2:  # Gradients - matches grad groups in graph (YELLOW_C)
                 line.set_color_by_tex(r"\frac{\partial J}{\partial a}", YELLOW_C)
                 line.set_color_by_tex(r"\frac{\partial J}{\partial b}", YELLOW_C)
-                line.set_color_by_tex("Gradients", YELLOW_C)
-            elif i == 3:  # Updates
+                line.set_color_by_tex("Calculate Gradients", YELLOW_C)
+                line.set_color_by_tex("determine steepest descent", YELLOW_C)
+            elif i == 3:  # Updates - matches focus colors (ORANGE)
                 line.set_color_by_tex(r"\eta", ORANGE)
                 line.set_color_by_tex(r"\leftarrow", ORANGE)
-                line.set_color_by_tex("Parameters", ORANGE)
-            elif i == 4:  # Repeat
-                line.set_color_by_tex("Repeat", GREY_B)
+                line.set_color_by_tex("Update Parameters", ORANGE)
+                line.set_color_by_tex("intelligent step", ORANGE)
+            elif i == 4:  # Repeat - matches completion colors (GREEN_C for cost)
+                line.set_color_by_tex("Iterate", GREEN_C)
                 line.set_color_by_tex("J", GREEN_C)
+                line.set_color_by_tex("converges to global minimum", GREEN_C)
 
-            line.next_to(prev, DOWN, buff=0.35, aligned_edge=LEFT)
-            self.play(Write(line), run_time=0.8)
+            line.next_to(prev, DOWN, buff=0.4, aligned_edge=LEFT)
+            self.play(Write(line), run_time=1.3)
             step_group.add(line)
             prev = line
 
-        self.wait(1.5)
-        self.play(FadeOut(steps_title), FadeOut(intro_alg), *[FadeOut(s) for s in step_group], run_time=0.8)
+        # Create proper vertical layout and center horizontally
+        algorithm_group = VGroup(intro_alg, *step_group)
+        # Center the complete screen 3 content as a whole
+        screen3_content = VGroup(steps_title, algorithm_group)
+
+        self.wait(6.0)
+
+        # Ensure all screen 3 elements are properly tracked and removed
+        self.play(FadeOut(screen3_content), run_time=1.5)
 
         # ===================== Graph Screen — Step label, status, then grid =====================
 
@@ -334,7 +386,7 @@ class LinearRegression(Scene):
         res_x_label = Tex(r"Residual (Error)", font_size=28)
         res_y_label = Tex(r"Frequency", font_size=28)
         res_x_label.next_to(res_axes.x_axis, DOWN, buff=0.1)
-        res_y_label.next_to(res_axes.y_axis, LEFT, buff=0.1).rotate(PI / 2)
+        res_y_label.next_to(res_axes.y_axis, LEFT, buff=0.05).rotate(PI / 2)
         res_axis_labels = VGroup(res_x_label, res_y_label)
 
         bl_cell = VGroup(res_axes, res_axis_labels)
@@ -388,7 +440,7 @@ class LinearRegression(Scene):
         mse_x_label = Tex(r"Iteration Number", font_size=28)
         mse_y_label = Tex(r"Mean Squared Error", font_size=28)
         mse_x_label.next_to(mse_axes.x_axis, DOWN, buff=0.1)
-        mse_y_label.next_to(mse_axes.y_axis, LEFT, buff=0.1).rotate(PI / 2)
+        mse_y_label.next_to(mse_axes.y_axis, LEFT, buff=0.05).rotate(PI / 2)
         mse_axis_labels = VGroup(mse_x_label, mse_y_label)
 
         br_cell = VGroup(mse_axes, mse_axis_labels)
@@ -508,6 +560,7 @@ class LinearRegression(Scene):
 
         # --- MSE incremental drawing
         mse_points = []
+        mse_segments = VGroup()  # Track MSE line segments
 
         def add_mse_point(i, a, b):
             y = min(mse(a, b), y_max_mse)
@@ -517,6 +570,7 @@ class LinearRegression(Scene):
             else:
                 seg = Line(mse_points[-2], mse_points[-1], stroke_width=3)
                 self.play(Create(seg), run_time=T_SEG)
+                mse_segments.add(seg)  # Track the segment
                 mse_graph.set_points_as_corners(mse_points)
 
         # Seed displays
@@ -540,18 +594,18 @@ class LinearRegression(Scene):
         add_mse_point(0, a_plot, b_plot)
         self.wait(T_WAIT)
 
-        focus_on(cost_group, r"Step 2: Cost $J(a,b)$", GREEN_E)
+        focus_on(cost_group, r"Calculate initial cost function", GREEN_E)
         self.play(cost_val.animate.set_value(mse0), run_time=T_COST)
         restore_all()
         self.wait(T_WAIT)
 
         da0, db0 = grads_display(a_plot, b_plot)
-        focus_on(grad_a_group, r"Step 3: Gradient $\partial J/\partial a$", YELLOW_E)
+        focus_on(grad_a_group, r"Calculate gradients for initial parameters", YELLOW_E)
         self.play(grad_a_val.animate.set_value(da0), run_time=T_NUM)
         restore_all()
         self.wait(T_WAIT)
 
-        focus_on(grad_b_group, r"Step 3: Gradient $\partial J/\partial b$", YELLOW_E)
+        focus_on(grad_b_group, r"Calculate gradients for initial parameters", YELLOW_E)
         self.play(grad_b_val.animate.set_value(db0), run_time=T_NUM)
         restore_all()
         self.wait(T_WAIT)
@@ -636,7 +690,7 @@ class LinearRegression(Scene):
             self.play(Create(new_line), run_time=T_LINE)
             self.wait(T_WAIT)
 
-            focus_on(cost_group, r"Evaluate new cost and show residuals", GREEN_E)
+            focus_on(cost_group, r"Evaluate new cost", GREEN_E)
             new_errs = residual_segments(a_plot, b_plot)
             if len(errs) == 0:
                 self.play(Create(new_errs), run_time=T_RES)
@@ -673,19 +727,71 @@ class LinearRegression(Scene):
         final_text = readout.copy().set_color(GREEN_E)
         self.play(Transform(readout, final_text), run_time=0.35)
 
-        set_step_label(r"Finished", GREEN_E)
+        set_step_label(r"Optimization Complete", GREEN_E)
+        self.wait(1.0)
 
-        # Keep final state
-        self.add(
+        # Collect ALL elements that need to be removed before final screen
+        all_graph_elements = VGroup(
             graph_cell,
             formulas_col,
-            bl_cell,  # histogram + axis labels only
-            br_cell,  # mse + axis labels only
+            bl_cell,
+            br_cell,
             mse_graph,
             status,
             step_label,
+            readout,
             spacer,
             status_spacer,
-            axes_labels,
+            hist,
         )
-        self.wait(1.4)
+        # Add any remaining trail or error elements if they exist
+        if len(trail) > 0:
+            all_graph_elements.add(*trail)
+        if len(errs) > 0:
+            all_graph_elements.add(errs)
+        if cur_line is not None:
+            all_graph_elements.add(cur_line)
+        # Add MSE line segments
+        if len(mse_segments) > 0:
+            all_graph_elements.add(mse_segments)
+
+        # Fade out everything from the graph screen completely
+        self.play(FadeOut(all_graph_elements), run_time=1.5)
+        self.wait(0.5)
+
+        # ===================== Professional Completion Screen =====================
+        insight_title = Tex(
+            r"\textbf{Key Insights}",
+            font_size=48,
+        )
+        insight_title.next_to(title, DOWN, buff=0.7)
+        self.play(Write(insight_title), run_time=2.0)
+
+        insights = [
+            r"\textbullet{} \textbf{Gradient descent} systematically minimizes prediction errors",
+            r"\textbullet{} Each iteration \textbf{improves the model} by following steepest descent",
+            r"\textbullet{} The algorithm \textbf{converged efficiently} to the optimal solution",
+            r"\textbullet{} Linear regression provides \textbf{interpretable, predictive models}",
+        ]
+
+        insights_content = VGroup()
+        for insight in insights:
+            insight_tex = Tex(insight, font_size=40)
+            insights_content.add(insight_tex)
+
+        insights_content.arrange(DOWN, buff=0.5, aligned_edge=LEFT)
+        insights_content.next_to(insight_title, DOWN, buff=0.4)
+
+        self.play(Write(insights_content), run_time=2.0)
+
+        self.wait(6.0)
+
+        # Final professional closing
+        closing_text = Tex(
+            r"\textbf{Thank you for exploring Linear Regression with Gradient Descent}",
+            font_size=34,
+        )
+        closing_text.next_to(insights_content, DOWN, buff=1.0)
+        self.play(FadeIn(closing_text), run_time=2.0)
+
+        self.wait(3.0)
