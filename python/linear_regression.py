@@ -48,77 +48,101 @@ class LinearRegression(Scene):
                 DOWN, aligned_edge=LEFT, buff=0.28
             )
 
-        # ===================== Screen 1: Description =====================
-        desc_text = (
-            "We observe paired data $(x_i, y_i)$ and fit a straight line to predict $y$ from $x$. "
-            "Linear regression chooses slope $a$ and intercept $b$ to minimize the mean squared error (MSE)."
-        )
-        desc_group = wrap_text_tex(desc_text, 36, config.frame_width - 1)
-        desc_group.next_to(title, DOWN, buff=0.5).to_edge(LEFT, buff=0.5)
-        self.play(Write(desc_group), run_time=2.2)
-        self.wait(1.4)
-        self.play(FadeOut(desc_group), run_time=0.6)
+        # ===================== Screen 1: What is Linear Regression? =====================
+        desc_heading = Tex("What is Linear Regression?", font_size=40)
+        desc_heading.next_to(title, DOWN, buff=0.5).to_edge(LEFT, buff=0.5)
+        self.play(Write(desc_heading), run_time=1.2)
 
-        # ===================== Screen 2: Use cases =====================
-        usecases_heading = Tex("Use Cases:", font_size=36)
+        desc_text = (
+            "Linear regression finds the best straight line through data points to predict one variable from another. "
+            r"Given data pairs $(x_i, y_i)$, we find the line $\hat{y} = ax + b$ that minimizes prediction errors. "
+            "This makes it one of the most fundamental tools in statistics and machine learning."
+        )
+        desc_group = wrap_text_tex(desc_text, 34, config.frame_width - 1)
+        desc_group.next_to(desc_heading, DOWN, buff=0.4).to_edge(LEFT, buff=0.5)
+        self.play(Write(desc_group), run_time=3.5)
+        self.wait(2.5)
+        self.play(FadeOut(desc_heading), FadeOut(desc_group), run_time=1.0)
+
+        # ===================== Screen 2: Real-World Applications =====================
+        usecases_heading = Tex("Real-World Applications", font_size=40)
         usecases_heading.next_to(title, DOWN, buff=0.5).to_edge(LEFT, buff=0.5)
-        self.play(Write(usecases_heading), run_time=0.6)
+        self.play(Write(usecases_heading), run_time=1.2)
+
+        usecases_intro = "Linear regression powers countless applications across industries:"
+        intro_text = Tex(usecases_intro, font_size=32)
+        intro_text.next_to(usecases_heading, DOWN, buff=0.3).to_edge(LEFT, buff=0.5)
+        self.play(Write(intro_text), run_time=1.8)
 
         usecases = [
-            r"\textbullet{} Trend prediction (e.g., sales vs.\ time)",
-            r"\textbullet{} Calibration (sensor reading $\to$ true value)",
-            r"\textbullet{} Simple forecasting (temperature vs.\ day)",
-            r"\textbullet{} Econometrics (consumption vs.\ income)",
-            r"\textbullet{} ML baseline for regression tasks",
+            r"\textbullet{} \textbf{Finance:} Stock price prediction, risk assessment",
+            r"\textbullet{} \textbf{Healthcare:} Drug dosage optimization, disease progression",
+            r"\textbullet{} \textbf{Marketing:} Sales forecasting, customer lifetime value",
+            r"\textbullet{} \textbf{Engineering:} System calibration, quality control",
+            r"\textbullet{} \textbf{Research:} Experimental analysis, hypothesis testing",
         ]
         bullets = VGroup()
-        prev = usecases_heading
-        for u in usecases:
-            b = Tex(u, font_size=33)
-            b.next_to(prev, DOWN, aligned_edge=LEFT)
-            self.play(Write(b), run_time=0.45)
+        prev = intro_text
+        for i, u in enumerate(usecases):
+            b = Tex(u, font_size=30)
+            b.next_to(prev, DOWN, buff=0.25, aligned_edge=LEFT)
+            self.play(Write(b), run_time=0.9)
             bullets.add(b)
             prev = b
 
-        self.wait(1.0)
+        self.wait(2.0)
         self.play(
-            FadeOut(usecases_heading), *[FadeOut(b) for b in bullets], run_time=0.6
+            FadeOut(usecases_heading), FadeOut(intro_text), *[FadeOut(b) for b in bullets], run_time=1.0
         )
 
-        # ===================== Screen 3: Steps =====================
-        steps_title = Tex("Steps of the algorithm:", font_size=36)
+        # ===================== Screen 3: Gradient Descent Algorithm =====================
+        steps_title = Tex("Gradient Descent Algorithm", font_size=40, color=ORANGE)
         steps_title.next_to(title, DOWN, buff=0.5).to_edge(LEFT, buff=0.5)
-        self.play(Write(steps_title), run_time=0.6)
+        self.play(Write(steps_title), run_time=0.8)
+
+        steps_intro = "We'll use gradient descent to find optimal parameters $a$ and $b$:"
+        intro_alg = Tex(steps_intro, font_size=32)
+        intro_alg.next_to(steps_title, DOWN, buff=0.3).to_edge(LEFT, buff=0.5)
+        self.play(Write(intro_alg), run_time=1.0)
 
         steps = [
-            r"1.\ Choose the model $\hat{y} = a x + b$.",
-            r"2.\ Define the cost $J(a,b)=\frac{1}{n}\sum (y_i-\hat{y}_i)^2$.",
-            r"3.\ Compute the gradients $\frac{\partial J}{\partial a}$ and $\frac{\partial J}{\partial b}$.",
-            r"4.\ Update with learning rate $\eta$: $a \leftarrow a-\eta\,\frac{\partial J}{\partial a}$, $b \leftarrow b-\eta\,\frac{\partial J}{\partial b}$.",
-            r"5.\ Repeat until $J$ stabilizes.",
+            r"1.\ \textbf{Define Model:} $\hat{y} = a x + b$ (linear relationship)",
+            r"2.\ \textbf{Set Cost Function:} $J(a,b)=\frac{1}{n}\sum (y_i-\hat{y}_i)^2$ (minimize errors)",
+            r"3.\ \textbf{Calculate Gradients:} $\frac{\partial J}{\partial a}$ and $\frac{\partial J}{\partial b}$ (find slope)",
+            r"4.\ \textbf{Update Parameters:} $a \leftarrow a-\eta\,\frac{\partial J}{\partial a}$, $b \leftarrow b-\eta\,\frac{\partial J}{\partial b}$",
+            r"5.\ \textbf{Repeat:} Until cost $J$ converges to minimum",
         ]
         COLS = [BLUE_C, GREEN_C, YELLOW_C, ORANGE, GREY_B]
         step_group = VGroup()
-        prev = steps_title
-        for text, col in zip(steps, COLS):
-            line = Tex(text, font_size=33).set_color(col)
-            if col is BLUE_C:
+        prev = intro_alg
+        for i, (text, col) in enumerate(zip(steps, COLS)):
+            line = Tex(text, font_size=30)
+            # Color specific parts of each step
+            if i == 0:  # Model
                 line.set_color_by_tex(r"\hat{y}", BLUE_C)
-            elif col is GREEN_C:
+                line.set_color_by_tex("Model", BLUE_C)
+            elif i == 1:  # Cost function
                 line.set_color_by_tex("J", GREEN_C)
-            elif col is YELLOW_C:
+                line.set_color_by_tex("Cost Function", GREEN_C)
+            elif i == 2:  # Gradients
                 line.set_color_by_tex(r"\frac{\partial J}{\partial a}", YELLOW_C)
                 line.set_color_by_tex(r"\frac{\partial J}{\partial b}", YELLOW_C)
-            elif col is ORANGE:
+                line.set_color_by_tex("Gradients", YELLOW_C)
+            elif i == 3:  # Updates
                 line.set_color_by_tex(r"\eta", ORANGE)
                 line.set_color_by_tex(r"\leftarrow", ORANGE)
-            line.next_to(prev, DOWN, aligned_edge=LEFT)
-            self.play(Write(line), run_time=0.7)
+                line.set_color_by_tex("Parameters", ORANGE)
+            elif i == 4:  # Repeat
+                line.set_color_by_tex("Repeat", GREY_B)
+                line.set_color_by_tex("J", GREEN_C)
+
+            line.next_to(prev, DOWN, buff=0.35, aligned_edge=LEFT)
+            self.play(Write(line), run_time=0.8)
             step_group.add(line)
             prev = line
 
-        self.wait(1.2)
-        self.play(FadeOut(steps_title), *[FadeOut(s) for s in step_group], run_time=0.6)
+        self.wait(1.5)
+        self.play(FadeOut(steps_title), FadeOut(intro_alg), *[FadeOut(s) for s in step_group], run_time=0.8)
 
         # ===================== Graph Screen — Step label, status, then grid =====================
 
@@ -410,7 +434,7 @@ class LinearRegression(Scene):
         eta_tracker = ValueTracker(0.35)  # bigger steps
 
         # --- Initial step + status text
-        set_step_label(r"Step 1: Model $\hat{y} = a x + b$", BLUE_E)
+        set_step_label(r"Initial Setup: Define model and starting parameters", BLUE_E)
         status.become(
             Tex(
                 rf"Iteration 0 $\cdot$ $\eta$ = {eta_tracker.get_value():.3f} $\cdot$ a = {a_plot:.3f}, b = {b_plot:.3f} $\cdot$ MSE = {mse0:.3f}",
@@ -482,12 +506,38 @@ class LinearRegression(Scene):
         self.play(FadeIn(readout), run_time=0.45)
         self.wait(T_WAIT)
 
+        # --- MSE incremental drawing
+        mse_points = []
+
+        def add_mse_point(i, a, b):
+            y = min(mse(a, b), y_max_mse)
+            mse_points.append(mse_axes.c2p(i, y))
+            if len(mse_points) == 1:
+                mse_graph.set_points_as_corners([mse_points[0], mse_points[0]])
+            else:
+                seg = Line(mse_points[-2], mse_points[-1], stroke_width=3)
+                self.play(Create(seg), run_time=T_SEG)
+                mse_graph.set_points_as_corners(mse_points)
+
         # Seed displays
         self.play(
             a_val.animate.set_value(a_plot),
             b_val.animate.set_value(b_plot),
             run_time=T_NUM,
         )
+        self.wait(T_WAIT)
+
+        # Draw initial model line and show initial metrics immediately after setting parameters
+        initial_line = line_from_params(a_plot, b_plot, color=BLUE_C, width=6)
+        initial_hist = residual_histogram_group(a_plot, b_plot)
+
+        # Show initial line, histogram, and MSE simultaneously (no step text)
+        self.play(
+            Create(initial_line),
+            Transform(hist, initial_hist),
+            run_time=T_LINE,
+        )
+        add_mse_point(0, a_plot, b_plot)
         self.wait(T_WAIT)
 
         focus_on(cost_group, r"Step 2: Cost $J(a,b)$", GREEN_E)
@@ -506,21 +556,8 @@ class LinearRegression(Scene):
         restore_all()
         self.wait(T_WAIT)
 
-        # --- MSE incremental drawing
-        mse_points = []
-
-        def add_mse_point(i, a, b):
-            y = min(mse(a, b), y_max_mse)
-            mse_points.append(mse_axes.c2p(i, y))
-            if len(mse_points) == 1:
-                mse_graph.set_points_as_corners([mse_points[0], mse_points[0]])
-            else:
-                seg = Line(mse_points[-2], mse_points[-1], stroke_width=3)
-                self.play(Create(seg), run_time=T_SEG)
-                mse_graph.set_points_as_corners(mse_points)
-
         # Dynamic visuals storage
-        cur_line = None
+        cur_line = initial_line  # Start with the initial blue line
         errs = VGroup()
         trail = VGroup()
         MAX_TRAIL = 4
@@ -536,14 +573,14 @@ class LinearRegression(Scene):
             # Skip gradient display for first iteration (already shown in setup)
             if i > 1:
                 focus_on(
-                    grad_a_group, r"Step 3: Gradient $\partial J/\partial a$", YELLOW_E
+                    grad_a_group, r"Recalculate gradients for new parameters", YELLOW_E
                 )
                 self.play(grad_a_val.animate.set_value(da_disp), run_time=T_NUM)
                 restore_all()
                 self.wait(T_WAIT)
 
                 focus_on(
-                    grad_b_group, r"Step 3: Gradient $\partial J/\partial b$", YELLOW_E
+                    grad_b_group, r"Recalculate gradients for new parameters", YELLOW_E
                 )
                 self.play(grad_b_val.animate.set_value(db_disp), run_time=T_NUM)
                 restore_all()
@@ -560,7 +597,7 @@ class LinearRegression(Scene):
             b_s = b_s - eta_tracker.get_value() * db_s
             a_plot, b_plot = scaled_to_plot(a_s, b_s)
 
-            focus_on(yhat_group, r"Step 4: Update $(a,b)$ with $\eta$", ORANGE)
+            focus_on(yhat_group, r"Update parameters using gradient descent", ORANGE)
             # Update both the formula values and the status bar simultaneously
             self.play(
                 a_val.animate.set_value(a_plot),
@@ -599,7 +636,7 @@ class LinearRegression(Scene):
             self.play(Create(new_line), run_time=T_LINE)
             self.wait(T_WAIT)
 
-            focus_on(cost_group, r"Step 2: Cost $J(a,b)$", GREEN_E)
+            focus_on(cost_group, r"Evaluate new cost and show residuals", GREEN_E)
             new_errs = residual_segments(a_plot, b_plot)
             if len(errs) == 0:
                 self.play(Create(new_errs), run_time=T_RES)
