@@ -229,7 +229,7 @@ class LinearRegression(Scene):
         axes_labels = VGroup(x_label, y_label)
         dots = VGroup(
             *[
-                Dot(axes.c2p(x, y), radius=0.065, color=BLUE_C, fill_opacity=0.7)
+                Dot(axes.c2p(x, y), radius=0.065, color=WHITE, fill_opacity=0.8)
                 for x, y in zip(xs, ys)
             ]
         )
@@ -255,9 +255,9 @@ class LinearRegression(Scene):
 
         # --- Top-right: Formulas (larger and centered vertically in their cell)
         yhat_left = MathTex(r"\hat{y} = ", font_size=58).set_color(BLUE_C)
-        a_val = DecimalNumber(-0.20, num_decimal_places=2, color=BLUE_C, font_size=58)
+        a_val = DecimalNumber(-0.20, num_decimal_places=3, color=BLUE_C, font_size=58)
         ax_tex = MathTex(r"x + ", font_size=58).set_color(BLUE_C)
-        b_val = DecimalNumber(0.80, num_decimal_places=2, color=BLUE_C, font_size=58)
+        b_val = DecimalNumber(0.80, num_decimal_places=3, color=BLUE_C, font_size=58)
         yhat_group = VGroup(yhat_left, a_val, ax_tex, b_val).arrange(RIGHT, buff=0.10)
 
         cost_left = MathTex(
@@ -307,8 +307,8 @@ class LinearRegression(Scene):
         ).scale(1.0)  # Moderate size
 
         # Create axis labels with bigger font
-        res_x_label = Tex(r"Residual", font_size=28)
-        res_y_label = Tex(r"Count", font_size=28)
+        res_x_label = Tex(r"Residual (Error)", font_size=28)
+        res_y_label = Tex(r"Frequency", font_size=28)
         res_x_label.next_to(res_axes.x_axis, DOWN, buff=0.1)
         res_y_label.next_to(res_axes.y_axis, LEFT, buff=0.1).rotate(PI / 2)
         res_axis_labels = VGroup(res_x_label, res_y_label)
@@ -361,8 +361,8 @@ class LinearRegression(Scene):
         ).scale(1.0)  # Moderate size
 
         # Create axis labels with bigger font
-        mse_x_label = Tex(r"Iteration", font_size=28)
-        mse_y_label = Tex(r"MSE", font_size=28)
+        mse_x_label = Tex(r"Iteration Number", font_size=28)
+        mse_y_label = Tex(r"Mean Squared Error", font_size=28)
         mse_x_label.next_to(mse_axes.x_axis, DOWN, buff=0.1)
         mse_y_label.next_to(mse_axes.y_axis, LEFT, buff=0.1).rotate(PI / 2)
         mse_axis_labels = VGroup(mse_x_label, mse_y_label)
@@ -467,10 +467,7 @@ class LinearRegression(Scene):
 
         def restore_all():
             self.play(
-                *[
-                    grp.animate.set_opacity(1.0)
-                    for grp in all_groups
-                ],
+                *[grp.animate.set_opacity(1.0) for grp in all_groups],
                 run_time=T_RESTORE,
             )
 
@@ -529,8 +526,8 @@ class LinearRegression(Scene):
         MAX_TRAIL = 4
         TOL = 1e-3
 
-        # ---- Optimization loop (5 steps)
-        for i in range(1, 5 + 1):
+        # ---- Optimization loop (3 steps)
+        for i in range(1, 3 + 1):
             # Calculate gradients once per iteration
             da_s, db_s = grads_scaled(a_s, b_s)
             a_disp, b_disp = scaled_to_plot(a_s, b_s)
