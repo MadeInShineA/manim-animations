@@ -6,14 +6,24 @@ import re
 
 class LinearRegression(Scene):
     def construct(self):
+        # ---------------- Timing knobs (slower steps) ----------------
+        T_FOCUS = 0.80  # focus_on transition (slower)
+        T_RESTORE = 0.60  # restore_all transition (slower)
+        T_NUM = 1.00  # number updates (a,b,grads,cost) (slower)
+        T_LINE = 0.80  # draw line (slower)
+        T_RES = 0.80  # residuals update (slower)
+        T_COST = 0.80  # cost update (slower)
+        T_SEG = 0.50  # MSE segment draw (slower)
+        T_HIST = 0.60  # histogram transform (slower)
+        T_WAIT = 0.50  # small pause between logical steps (longer)
+
         # ---------------- Title ----------------
         title = Tex("Linear Regression (Gradient Descent)", font_size=48)
-        self.play(FadeIn(title))
-        self.wait(0.6)
-        self.play(title.animate.to_edge(UP))
+        self.play(FadeIn(title), run_time=0.9)
+        self.play(title.animate.to_edge(UP, buff=0.06), run_time=0.6)
 
-        # ---------------- Math-aware text wrap (doesn't split $...$) ----------------
-        def wrap_text_tex(text: str, font_size: int, max_width: float) -> list[str]:
+        # ---------------- Math-aware wrap ($...$ safe) ----------------
+        def wrap_text_tex(text: str, font_size: int, max_width: float) -> VGroup:
             segments = re.split(r"(\$[^$]*\$)", text)  # keep $...$ groups
             tokens: list[str] = []
             for seg in segments:
@@ -24,238 +34,147 @@ class LinearRegression(Scene):
                 else:
                     tokens.extend(seg.split(" "))
             lines: list[str] = []
-            current = ""
+            cur = ""
             for tok in tokens:
-                if tok == "":
-                    continue
-                cand = (current + " " + tok).strip() if current else tok
-                if Tex(cand, font_size=font_size).width > max_width and current:
-                    lines.append(current)
-                    current = tok
+                cand = (cur + " " + tok).strip() if cur else tok
+                if cur and Tex(cand, font_size=font_size).width > max_width:
+                    lines.append(cur)
+                    cur = tok
                 else:
-                    current = cand
-            if current:
-                lines.append(current)
-            return lines
+                    cur = cand
+            if cur:
+                lines.append(cur)
+            return VGroup(*[Tex(ln, font_size=font_size) for ln in lines]).arrange(
+                DOWN, aligned_edge=LEFT, buff=0.28
+            )
 
         # ===================== Screen 1: Description =====================
-        desc_raw = (
-            "We observe data points $(x_i,y_i)$ and fit a straight line to predict $y$ from $x$. "
+        desc_text = (
+            "We observe paired data $(x_i, y_i)$ and fit a straight line to predict $y$ from $x$. "
             "Linear regression chooses slope $a$ and intercept $b$ to minimize the mean squared error (MSE)."
         )
-        desc_lines = wrap_text_tex(
-            desc_raw, font_size=36, max_width=config.frame_width - 1
-        )
-        description_group = (
-            VGroup(*[Tex(ln, font_size=36) for ln in desc_lines])
-            .arrange(DOWN, aligned_edge=LEFT)
-            .next_to(title, DOWN, buff=0.6)
-            .to_edge(LEFT, buff=0.6)
-        )
-        self.play(Write(description_group))
-        self.wait(3)
-        self.play(FadeOut(description_group))
-        self.wait(0.3)
+        desc_group = wrap_text_tex(desc_text, 36, config.frame_width - 1)
+        desc_group.next_to(title, DOWN, buff=0.5).to_edge(LEFT, buff=0.5)
+        self.play(Write(desc_group), run_time=2.2)
+        self.wait(1.4)
+        self.play(FadeOut(desc_group), run_time=0.6)
 
         # ===================== Screen 2: Use cases =====================
-        usecases_heading = (
-            Tex("Use Cases:", font_size=36)
-            .next_to(title, DOWN, buff=0.6)
-            .to_edge(LEFT, buff=0.6)
-        )
-        self.play(Write(usecases_heading))
-        self.wait(0.2)
+        usecases_heading = Tex("Use Cases:", font_size=36)
+        usecases_heading.next_to(title, DOWN, buff=0.5).to_edge(LEFT, buff=0.5)
+        self.play(Write(usecases_heading), run_time=0.6)
+
         usecases = [
-            "Trend prediction (e.g., sales vs. time)",
-            "Calibration (sensor reading → true value)",
-            "Simple forecasting (temperature vs. day)",
-            "Econometrics (consumption vs. income)",
-            "ML baseline for regression tasks",
+            r"\textbullet{} Trend prediction (e.g., sales vs.\ time)",
+            r"\textbullet{} Calibration (sensor reading $\to$ true value)",
+            r"\textbullet{} Simple forecasting (temperature vs.\ day)",
+            r"\textbullet{} Econometrics (consumption vs.\ income)",
+            r"\textbullet{} ML baseline for regression tasks",
         ]
         bullets = VGroup()
         prev = usecases_heading
         for u in usecases:
-            b = Tex("• " + u, font_size=32)
+            b = Tex(u, font_size=33)
             b.next_to(prev, DOWN, aligned_edge=LEFT)
-            self.play(Write(b))
-            self.wait(0.15)
+            self.play(Write(b), run_time=0.45)
             bullets.add(b)
             prev = b
-        self.wait(1.0)
-        self.play(FadeOut(usecases_heading), *[FadeOut(b) for b in bullets])
-        self.wait(0.3)
 
-        # ===================== Screen 3: Steps (colors match formulas) =====================
-        steps_title = (
-            Tex("Steps of the algorithm:", font_size=36)
-            .next_to(title, DOWN, buff=0.6)
-            .to_edge(LEFT, buff=0.6)
+        self.wait(1.0)
+        self.play(
+            FadeOut(usecases_heading), *[FadeOut(b) for b in bullets], run_time=0.6
         )
-        self.play(Write(steps_title))
-        self.wait(0.2)
+
+        # ===================== Screen 3: Steps =====================
+        steps_title = Tex("Steps of the algorithm:", font_size=36)
+        steps_title.next_to(title, DOWN, buff=0.5).to_edge(LEFT, buff=0.5)
+        self.play(Write(steps_title), run_time=0.6)
+
         steps = [
-            r"1. Choose the model $\hat{y} = a x + b$.",  # BLUE
-            r"2. Define the cost: $J(a,b)=\frac{1}{n}\sum (y_i-\hat{y}_i)^2$.",  # GREEN
-            r"3. Compute gradients $\frac{\partial J}{\partial a},\,\frac{\partial J}{\partial b}$.",  # YELLOW
-            r"4. Update with learning rate $\eta$: $a \leftarrow a-\eta\,\partial J/\partial a,\; b \leftarrow b-\eta\,\partial J/\partial b$.",  # ORANGE
-            r"5. Repeat until $J$ stabilizes.",  # GREY
+            r"1.\ Choose the model $\hat{y} = a x + b$.",
+            r"2.\ Define the cost $J(a,b)=\frac{1}{n}\sum (y_i-\hat{y}_i)^2$.",
+            r"3.\ Compute the gradients $\frac{\partial J}{\partial a}$ and $\frac{\partial J}{\partial b}$.",
+            r"4.\ Update with learning rate $\eta$: $a \leftarrow a-\eta\,\frac{\partial J}{\partial a}$, $b \leftarrow b-\eta\,\frac{\partial J}{\partial b}$.",
+            r"5.\ Repeat until $J$ stabilizes.",
         ]
-        STEP_COLORS = [BLUE, GREEN, YELLOW, ORANGE, GREY_B]
-        prev = steps_title
+        COLS = [BLUE_C, GREEN_C, YELLOW_C, ORANGE, GREY_B]
         step_group = VGroup()
-        for text, col in zip(steps, STEP_COLORS):
-            line = Tex(text, font_size=32)
-            num_token = text.split()[0]  # "1.", "2.", ...
-            line.set_color_by_tex(num_token, col)
-            if col is BLUE:
-                line.set_color_by_tex(r"\hat{y}", BLUE)
-            elif col is GREEN:
-                line.set_color_by_tex("J", GREEN)
-            elif col is YELLOW:
-                line.set_color_by_tex(r"\frac{\partial J}{\partial a}", YELLOW)
-                line.set_color_by_tex(r"\frac{\partial J}{\partial b}", YELLOW)
+        prev = steps_title
+        for text, col in zip(steps, COLS):
+            line = Tex(text, font_size=33).set_color(col)
+            if col is BLUE_C:
+                line.set_color_by_tex(r"\hat{y}", BLUE_C)
+            elif col is GREEN_C:
+                line.set_color_by_tex("J", GREEN_C)
+            elif col is YELLOW_C:
+                line.set_color_by_tex(r"\frac{\partial J}{\partial a}", YELLOW_C)
+                line.set_color_by_tex(r"\frac{\partial J}{\partial b}", YELLOW_C)
             elif col is ORANGE:
                 line.set_color_by_tex(r"\eta", ORANGE)
                 line.set_color_by_tex(r"\leftarrow", ORANGE)
             line.next_to(prev, DOWN, aligned_edge=LEFT)
-            self.play(Write(line))
-            self.wait(0.2)
+            self.play(Write(line), run_time=0.7)
             step_group.add(line)
             prev = line
-        self.wait(1.0)
-        self.play(FadeOut(steps_title), *[FadeOut(s) for s in step_group])
-        self.wait(0.2)
 
-        # ===================== Screen 4: Graph + 2x2 formulas + Animation =====================
-        axes = (
-            Axes(
-                x_range=[0, 10, 1],
-                y_range=[0, 10, 1],
-                tips=False,
-                axis_config={"include_numbers": True},
-            )
-            .add_coordinates()
-            .scale(0.78)
+        self.wait(1.2)
+        self.play(FadeOut(steps_title), *[FadeOut(s) for s in step_group], run_time=0.6)
+
+        # ===================== Graph Screen — Step label, status, then grid =====================
+
+        # Fixed spacer under title; step label anchored to it
+        probe = Tex("Step X: Sample", font_size=32)
+        spacer = Rectangle(
+            width=0.001, height=probe.height, stroke_width=0, fill_opacity=0
         )
+        spacer.next_to(title, DOWN, buff=0.04)
+        self.add(spacer)
 
-        # Data
-        n = 50
-        random.seed(666)
-        np.random.seed(666)
+        # Step label (fixed position)
+        step_label = Tex("", font_size=32).move_to(spacer.get_center())
+        self.add(step_label)
+
+        def set_step_label(text: str, color):
+            step_label.become(
+                Tex(text, font_size=32).set_color(color).move_to(spacer.get_center())
+            )
+
+        # Status (n & iteration) anchored UNDER the step label - include iteration and MSE
+        status_probe = Tex(
+            "n = 00 • Iteration 0 • a = 0.000, b = 0.000 • MSE = 0.000", font_size=26
+        )
+        status_spacer = Rectangle(
+            width=0.001, height=status_probe.height, stroke_width=0, fill_opacity=0
+        )
+        status_spacer.next_to(spacer, DOWN, buff=0.06)
+        self.add(status_spacer)
+        status = Tex("", font_size=26).move_to(status_spacer.get_center())
+        self.add(status)
+
+        # --- Data
+        n = 60
+        random.seed(2025)
+        np.random.seed(2025)
         true_m, true_b = 0.7, 2.0
-        xs = np.random.uniform(0, 10, size=n)
-        noise = np.random.uniform(-1.0, 1.0, size=n)
+        xs = np.random.uniform(0.5, 9.5, size=n)
+        noise = np.random.normal(loc=0.0, scale=1.15, size=n)
         ys = true_m * xs + true_b + noise
+        ys = np.clip(ys, 0.5, 8.5)
 
-        # Dots inside axes
-        dots = VGroup(*[Dot(axes.c2p(x, y), radius=0.055) for x, y in zip(xs, ys)])
-        axes.add(*dots)
-
-        # -------- Static left parts + live numeric parts (keeps layout fixed) --------
-        # yhat = a x + b   (BLUE)
-        yhat_left = MathTex(r"\hat{y} = ").set_color(BLUE)
-        yhat_ax = MathTex("x + ").set_color(BLUE)
-        a_val = DecimalNumber(-0.20, num_decimal_places=2, color=BLUE, font_size=36)
-        b_val = DecimalNumber(0.80, num_decimal_places=2, color=BLUE, font_size=36)
-        yhat_group = VGroup(yhat_left, a_val, yhat_ax, b_val).arrange(RIGHT, buff=0.05)
-
-        # Cost J(a,b) = ... = value (GREEN)
-        cost_left = MathTex(
-            r"J(a,b) = \frac{1}{n}\sum_{i=1}^{n}\big(y_i - (a x_i + b)\big)^2",
-            font_size=32,
-        ).set_color(GREEN)
-        cost_eq = MathTex(r"=", font_size=32).set_color(GREEN)
-        cost_val = DecimalNumber(0.0, num_decimal_places=3, color=GREEN, font_size=32)
-        cost_group = VGroup(cost_left, cost_eq, cost_val).arrange(RIGHT, buff=0.12)
-
-        # Grad a (YELLOW)
-        grad_a_left = MathTex(
-            r"\frac{\partial J}{\partial a} = -\frac{2}{n}\sum x_i\big(y_i - (a x_i + b)\big)",
-            font_size=30,
-        ).set_color(YELLOW)
-        grad_a_eq = MathTex(r"=", font_size=30).set_color(YELLOW)
-        grad_a_val = DecimalNumber(
-            0.0, num_decimal_places=3, color=YELLOW, font_size=30
-        )
-        grad_a_group = VGroup(grad_a_left, grad_a_eq, grad_a_val).arrange(
-            RIGHT, buff=0.12
-        )
-
-        # Grad b (YELLOW)
-        grad_b_left = MathTex(
-            r"\frac{\partial J}{\partial b} = -\frac{2}{n}\sum \big(y_i - (a x_i + b)\big)",
-            font_size=30,
-        ).set_color(YELLOW)
-        grad_b_eq = MathTex(r"=", font_size=30).set_color(YELLOW)
-        grad_b_val = DecimalNumber(
-            0.0, num_decimal_places=3, color=YELLOW, font_size=30
-        )
-        grad_b_group = VGroup(grad_b_left, grad_b_eq, grad_b_val).arrange(
-            RIGHT, buff=0.12
-        )
-
-        # Arrange into 2x2 grid (fixed positions)
-        formula_grid = VGroup(
-            yhat_group, cost_group, grad_a_group, grad_b_group
-        ).arrange_in_grid(
-            rows=2,
-            cols=2,
-            buff=(0.28, 0.28),
-            row_alignments=["c", "c"],
-            col_alignments=["c", "c"],
-        )
-
-        # Center graph + formulas together
-        graph_block = VGroup(axes, formula_grid).arrange(DOWN, buff=0.45)
-        graph_block.next_to(title, DOWN, buff=0.45)
-        graph_block.move_to(ORIGIN)
-
-        if formula_grid.width > (config.frame_width - 0.8):
-            formula_grid.scale((config.frame_width - 0.8) / formula_grid.width)
-
-        self.play(Create(axes))
-        self.play(LaggedStart(*[FadeIn(d) for d in dots], lag_ratio=0.03, run_time=0.9))
-        self.play(
-            LaggedStart(
-                *[
-                    Write(m)
-                    for m in [yhat_group, cost_group, grad_a_group, grad_b_group]
-                ],
-                lag_ratio=0.12,
-            )
-        )
-        self.wait(0.2)
-
-        # -------- Helpers --------
-        def line_from_params(m, b, color=ORANGE, width=6):
-            x0, x1 = axes.x_range[0], axes.x_range[1]
-            p0 = axes.c2p(x0, m * x0 + b)
-            p1 = axes.c2p(x1, m * x1 + b)
-            return Line(p0, p1, color=color, stroke_width=width)
-
-        def error_group(m, b):
-            g = VGroup()
-            for x, y in zip(xs, ys):
-                yhat = m * x + b
-                a = axes.c2p(x, min(y, yhat))
-                bb = axes.c2p(x, max(y, yhat))
-                g.add(Line(a, bb, color=YELLOW, stroke_width=1.1))
-            return g
-
-        def grads_display(a, b):
-            yhat = a * xs + b
-            err = ys - yhat
-            n_ = len(xs)
-            da = -(2.0 / n_) * np.sum(xs * err)
-            db = -(2.0 / n_) * np.sum(err)
-            return da, db
-
+        # --- Math helpers
         def mse(a, b):
             return np.mean((ys - (a * xs + b)) ** 2)
 
-        # Optimizer uses scaled x for stability
+        def residuals(a, b):
+            return ys - (a * xs + b)
+
         x_mu, x_sigma = xs.mean(), xs.std()
         x_scaled = (xs - x_mu) / x_sigma
+
+        def scaled_to_plot(a_s, b_s):
+            a = a_s / x_sigma
+            b = b_s - (a_s * x_mu / x_sigma)
+            return a, b
 
         def grads_scaled(a_s, b_s):
             yhat = a_s * x_scaled + b_s
@@ -265,109 +184,455 @@ class LinearRegression(Scene):
             db = -(2.0 / n_) * np.sum(err)
             return da, db
 
-        def scaled_to_plot(a_s, b_s):
-            a = a_s / x_sigma
-            b = b_s - (a_s * x_mu / x_sigma)
-            return a, b
+        def grads_display(a, b):
+            yhat = a * xs + b
+            err = ys - yhat
+            n_ = len(xs)
+            da = -(2.0 / n_) * np.sum(xs * err)
+            db = -(2.0 / n_) * np.sum(err)
+            return da, db
+
+        # Seed params for initial scales
+        a_s, b_s = -0.2, 0.8
+        a_plot, b_plot = scaled_to_plot(a_s, b_s)
+        mse0 = mse(a_plot, b_plot)
+
+        # Histogram scale based on initial residuals
+        def hist_counts_edges(a, b, bins=10):
+            r = residuals(a, b)
+            return np.histogram(r, bins=bins, range=(-4, 4))
+
+        counts0, edges0 = hist_counts_edges(a_plot, b_plot, bins=10)
+        hist_ymax = max(20, int(np.ceil(counts0.max() * 1.2)))
+        hist_step = max(1, int(np.ceil(hist_ymax / 5)))
+
+        # --- Top-left: Graph (maximize size)
+        axes = (
+            Axes(
+                x_range=[0, 10, 1],
+                y_range=[0, 10, 1],
+                tips=False,
+                axis_config={"include_numbers": True, "font_size": 26},
+            )
+            .add_coordinates()
+            .scale(1.3)  # Much bigger
+        )
+        dots = VGroup(*[Dot(axes.c2p(x, y), radius=0.065) for x, y in zip(xs, ys)])
+        graph_cell = VGroup(axes, dots)
+
+        def line_from_params(m, b, color=ORANGE, width=6):
+            x0, x1 = axes.x_range[0], axes.x_range[1]
+            return Line(
+                axes.c2p(x0, m * x0 + b),
+                axes.c2p(x1, m * x1 + b),
+                color=color,
+                stroke_width=width,
+            )
+
+        def residual_segments(m, b):
+            g = VGroup()
+            for x, y in zip(xs, ys):
+                yhat = m * x + b
+                a = axes.c2p(x, min(y, yhat))
+                bb = axes.c2p(x, max(y, yhat))
+                g.add(Line(a, bb, color=YELLOW_C, stroke_width=1.2, stroke_opacity=0.9))
+            return g
+
+        # --- Top-right: Formulas (larger and centered vertically in their cell)
+        yhat_left = MathTex(r"\hat{y} = ", font_size=48).set_color(BLUE_C)
+        a_val = DecimalNumber(-0.20, num_decimal_places=2, color=BLUE_C, font_size=48)
+        ax_tex = MathTex(r"x + ", font_size=48).set_color(BLUE_C)
+        b_val = DecimalNumber(0.80, num_decimal_places=2, color=BLUE_C, font_size=48)
+        yhat_group = VGroup(yhat_left, a_val, ax_tex, b_val).arrange(RIGHT, buff=0.08)
+
+        cost_left = MathTex(
+            r"J(a,b) = \frac{1}{n}\sum_{i=1}^{n}\big(y_i - (a x_i + b)\big)^2",
+            font_size=42,
+        ).set_color(GREEN_C)
+        cost_eq = MathTex(r"=", font_size=42).set_color(GREEN_C)
+        cost_val = DecimalNumber(0.0, num_decimal_places=3, color=GREEN_C, font_size=42)
+        cost_group = VGroup(cost_left, cost_eq, cost_val).arrange(RIGHT, buff=0.10)
+
+        grad_a_left = MathTex(
+            r"\frac{\partial J}{\partial a} = -\frac{2}{n}\sum x_i\big(y_i - (a x_i + b)\big)",
+            font_size=38,
+        ).set_color(YELLOW_C)
+        grad_a_eq = MathTex(r"=", font_size=38).set_color(YELLOW_C)
+        grad_a_val = DecimalNumber(
+            0.0, num_decimal_places=3, color=YELLOW_C, font_size=38
+        )
+        grad_a_group = VGroup(grad_a_left, grad_a_eq, grad_a_val).arrange(
+            RIGHT, buff=0.10
+        )
+
+        grad_b_left = MathTex(
+            r"\frac{\partial J}{\partial b} = -\frac{2}{n}\sum \big(y_i - (a x_i + b)\big)",
+            font_size=38,
+        ).set_color(YELLOW_C)
+        grad_b_eq = MathTex(r"=", font_size=38).set_color(YELLOW_C)
+        grad_b_val = DecimalNumber(
+            0.0, num_decimal_places=3, color=YELLOW_C, font_size=38
+        )
+        grad_b_group = VGroup(grad_b_left, grad_b_eq, grad_b_val).arrange(
+            RIGHT, buff=0.10
+        )
+
+        formulas_col = VGroup(
+            yhat_group, cost_group, grad_a_group, grad_b_group
+        ).arrange(DOWN, buff=0.3, aligned_edge=LEFT)
+
+        # --- Bottom-left: Histogram (maximize size)
+        res_axes = Axes(
+            x_range=[-4, 4, 2],
+            y_range=[0, hist_ymax, hist_step],
+            tips=False,
+            axis_config={"include_numbers": True, "font_size": 22},
+        ).scale(1.3)  # Much bigger
+
+        # Create axis labels with bigger font
+        x_label = Tex(r"Residual", font_size=28)
+        y_label = Tex(r"Count", font_size=28)
+        x_label.next_to(res_axes.x_axis, DOWN, buff=0.05)
+        y_label.next_to(res_axes.y_axis, LEFT, buff=0.05).rotate(PI / 2)
+        res_axis_labels = VGroup(x_label, y_label)
+
+        bl_cell = VGroup(res_axes, res_axis_labels)
+
+        def residual_histogram_group(a, b, bins=10):
+            counts, edges = hist_counts_edges(a, b, bins=bins)
+            bars = VGroup()
+            for c, e0, e1 in zip(counts, edges[:-1], edges[1:]):
+                p00 = res_axes.c2p(e0, 0)
+                p01 = res_axes.c2p(e0, c)
+                p11 = res_axes.c2p(e1, c)
+                p10 = res_axes.c2p(e1, 0)
+                bars.add(
+                    Polygon(p00, p01, p11, p10)
+                    .set_fill(YELLOW_C, opacity=0.6)
+                    .set_stroke(YELLOW_C, width=1)
+                )
+            return bars
+
+        def zero_hist_group(bins=10):
+            edges = np.linspace(-4, 4, bins + 1)
+            bars = VGroup()
+            for e0, e1 in zip(edges[:-1], edges[1:]):
+                p00 = res_axes.c2p(e0, 0)
+                p01 = res_axes.c2p(e0, 0)
+                p11 = res_axes.c2p(e1, 0)
+                p10 = res_axes.c2p(e1, 0)
+                bars.add(
+                    Polygon(p00, p01, p11, p10)
+                    .set_fill(YELLOW_C, opacity=0.3)
+                    .set_stroke(width=0)
+                )
+            return bars
+
+        # --- Bottom-right: MSE plot (maximize size)
+        steps = 5
+        y_max_mse = max(10.0, mse0 * 1.4)
+        y_step_mse = round(y_max_mse / 5)  # Round the step size
+        mse_axes = Axes(
+            x_range=[0, steps, 1],
+            y_range=[0, round(y_max_mse), y_step_mse],  # Round the max value
+            tips=False,
+            axis_config={
+                "include_numbers": True,
+                "font_size": 20,
+                "decimal_number_config": {"num_decimal_places": 0},
+            },  # No decimals
+        ).scale(1.3)  # Much bigger
+
+        # Create axis labels with bigger font
+        mse_x_label = Tex(r"Iteration", font_size=28)
+        mse_y_label = Tex(r"MSE", font_size=28)
+        mse_x_label.next_to(mse_axes.x_axis, DOWN, buff=0.05)
+        mse_y_label.next_to(mse_axes.y_axis, LEFT, buff=0.05).rotate(PI / 2)
+        mse_axis_labels = VGroup(mse_x_label, mse_y_label)
+
+        br_cell = VGroup(mse_axes, mse_axis_labels)
+        mse_graph = VMobject(stroke_width=3)
+
+        # --- Assemble grid to maximize screen usage
+        tl_cell = VGroup(graph_cell)
+        tr_cell = VGroup(formulas_col)
+
+        # Create top row with normal arrangement first
+        top_row = VGroup(tl_cell, tr_cell).arrange(RIGHT, buff=0.2, aligned_edge=UP)
+
+        # Center formulas vertically within their allocated space in the right cell
+        # The formulas should be centered in their own cell, not moved to the graph's position
+        formulas_col.move_to(tr_cell.get_center())
+
+        bottom_row = VGroup(bl_cell, br_cell).arrange(RIGHT, buff=0.2, aligned_edge=UP)
+        grid = VGroup(top_row, bottom_row).arrange(DOWN, buff=0.15, aligned_edge=LEFT)
+
+        # Calculate maximum available space and scale aggressively to fill screen
+        available_width = config.frame_width - 0.05  # Almost no padding
+        available_height = (
+            config.frame_height
+            - (title.height + spacer.height + status_spacer.height + 0.15)
+            - 0.05  # Almost no padding
+        )
+
+        # Scale to fill the maximum available space
+        width_scale = available_width / grid.width
+        height_scale = available_height / grid.height
+        scale_factor = (
+            min(width_scale, height_scale) * 0.99
+        )  # Use 99% of available space
+
+        grid.scale(scale_factor)
+
+        # Center the grid in available space
+        grid.next_to(status_spacer, DOWN, buff=0.03)
+        grid.set_x(0)
+
+        # --- Initial step + status text
+        set_step_label(r"Step 1: Model $\hat{y} = a x + b$", BLUE_E)
+        status.become(
+            Tex(
+                f"n = {n}  •  Iteration 0  •  a = {a_plot:.3f}, b = {b_plot:.3f}  •  MSE = {mse0:.3f}",
+                font_size=26,
+            ).move_to(status_spacer.get_center())
+        )
+
+        # --- Reveal scaffolding
+        self.play(Create(axes), run_time=0.7)
+        self.play(LaggedStart(*[FadeIn(d) for d in dots], lag_ratio=0.02, run_time=1.0))
+        self.play(
+            LaggedStart(
+                *[
+                    Write(m)
+                    for m in [yhat_group, cost_group, grad_a_group, grad_b_group]
+                ],
+                lag_ratio=0.10,
+                run_time=1.0,
+            )
+        )
+        self.play(Create(res_axes), run_time=0.6)
+        self.play(Create(mse_axes), run_time=0.6)
+        self.add(res_axis_labels, mse_axis_labels)
+        self.add(mse_graph)
+        hist = zero_hist_group()
+        self.add(hist)
+        self.wait(T_WAIT)
+
+        # --- Focus helpers
+        all_groups = [yhat_group, cost_group, grad_a_group, grad_b_group]
+        BASE_COL = {
+            yhat_group: BLUE_C,
+            cost_group: GREEN_C,
+            grad_a_group: YELLOW_C,
+            grad_b_group: YELLOW_C,
+        }
+        FOCUS_COL = {
+            yhat_group: BLUE_E,
+            cost_group: GREEN_E,
+            grad_a_group: YELLOW_E,
+            grad_b_group: YELLOW_E,
+        }
+
+        def focus_on(target: VMobject, label_tex: str, label_color):
+            set_step_label(label_tex, label_color)
+            anims = []
+            for grp in all_groups:
+                if grp is target:
+                    anims.append(grp.animate.set_opacity(1.0).set_color(FOCUS_COL[grp]))
+                else:
+                    anims.append(grp.animate.set_opacity(0.25).set_color(BASE_COL[grp]))
+            self.play(*anims, run_time=T_FOCUS)
+
+        def restore_all():
+            self.play(
+                *[
+                    grp.animate.set_opacity(1.0).set_color(BASE_COL[grp])
+                    for grp in all_groups
+                ],
+                run_time=T_RESTORE,
+            )
+
+        # --- Eta + readout (under formulas)
+        eta_tracker = ValueTracker(0.35)  # bigger steps
+        eta_label = always_redraw(
+            lambda: MathTex(
+                r"\eta = ", f"{eta_tracker.get_value():.3f}", font_size=26
+            ).next_to(formulas_col, DOWN, buff=0.08, aligned_edge=LEFT)
+        )
 
         def info_readout(iter_no, a, b):
-            t = Tex(
-                f"Iteration {iter_no}   a={a:.3f}, b={b:.3f}   MSE={mse(a, b):.3f}",
-                font_size=26,
-            )
-            return t.next_to(formula_grid, DOWN, buff=0.25)
-
-        # -------- Animation: Gradient Descent (with η) --------
-        a_s, b_s = -0.2, 0.8
-        eta = 0.12
-        steps = 8
-
-        a_plot, b_plot = scaled_to_plot(a_s, b_s)
-        cur_line = line_from_params(a_plot, b_plot, color=ORANGE, width=6)
-        errs = error_group(a_plot, b_plot)
-
-        # Set visible numbers (yhat, grads, cost)
-        self.play(a_val.animate.set_value(a_plot), b_val.animate.set_value(b_plot))
-        da_disp, db_disp = grads_display(a_plot, b_plot)
-        self.play(
-            grad_a_val.animate.set_value(da_disp),
-            grad_b_val.animate.set_value(db_disp),
-            cost_val.animate.set_value(mse(a_plot, b_plot)),
-        )
+            return Tex(
+                "",  # Remove iteration display
+                font_size=24,
+            ).next_to(formulas_col, DOWN, buff=0.25, aligned_edge=LEFT)
 
         readout = info_readout(0, a_plot, b_plot)
-        self.play(Create(cur_line), Create(errs), FadeIn(readout))
+        self.play(FadeIn(eta_label), FadeIn(readout), run_time=0.45)
+        self.wait(T_WAIT)
 
+        # Seed displays
+        self.play(
+            a_val.animate.set_value(a_plot),
+            b_val.animate.set_value(b_plot),
+            run_time=T_NUM,
+        )
+        self.wait(T_WAIT)
+
+        focus_on(cost_group, r"Step 2: Cost $J(a,b)$", GREEN_E)
+        self.play(cost_val.animate.set_value(mse0), run_time=T_COST)
+        restore_all()
+        self.wait(T_WAIT)
+
+        da0, db0 = grads_display(a_plot, b_plot)
+        focus_on(grad_a_group, r"Step 3: Gradient $\partial J/\partial a$", YELLOW_E)
+        self.play(grad_a_val.animate.set_value(da0), run_time=T_NUM)
+        restore_all()
+        self.wait(T_WAIT)
+
+        focus_on(grad_b_group, r"Step 3: Gradient $\partial J/\partial b$", YELLOW_E)
+        self.play(grad_b_val.animate.set_value(db0), run_time=T_NUM)
+        restore_all()
+        self.wait(T_WAIT)
+
+        # --- MSE incremental drawing
+        mse_points = []
+
+        def add_mse_point(i, a, b):
+            y = min(mse(a, b), y_max_mse)
+            mse_points.append(mse_axes.c2p(i, y))
+            if len(mse_points) == 1:
+                mse_graph.set_points_as_corners([mse_points[0], mse_points[0]])
+            else:
+                seg = Line(mse_points[-2], mse_points[-1], stroke_width=3)
+                self.play(Create(seg), run_time=T_SEG)
+                mse_graph.set_points_as_corners(mse_points)
+
+        # Dynamic visuals storage
+        cur_line = None
+        errs = VGroup()
         trail = VGroup()
-        for i in range(1, steps + 1):
+        MAX_TRAIL = 4
+        TOL = 1e-3
+
+        # ---- Optimization loop (5 steps)
+        for i in range(1, 5 + 1):
             da_s, db_s = grads_scaled(a_s, b_s)
-            a_s = a_s - eta * da_s
-            b_s = b_s - eta * db_s
+            a_disp, b_disp = scaled_to_plot(a_s, b_s)
+            da_disp, db_disp = grads_display(a_disp, b_disp)
+
+            focus_on(
+                grad_a_group, r"Step 3: Gradient $\partial J/\partial a$", YELLOW_E
+            )
+            self.play(grad_a_val.animate.set_value(da_disp), run_time=T_NUM)
+            restore_all()
+            self.wait(T_WAIT)
+
+            focus_on(
+                grad_b_group, r"Step 3: Gradient $\partial J/\partial b$", YELLOW_E
+            )
+            self.play(grad_b_val.animate.set_value(db_disp), run_time=T_NUM)
+            restore_all()
+            self.wait(T_WAIT)
+
+            if np.hypot(da_s, db_s) < TOL and i > 2:
+                note = Tex("Converged (small gradient)", font_size=24, color=GREY_B)
+                note.next_to(formulas_col, DOWN, buff=0.1, aligned_edge=LEFT)
+                self.play(FadeIn(note), run_time=0.3)
+                break
+
+            # Update params (bigger step with higher eta)
+            a_s = a_s - eta_tracker.get_value() * da_s
+            b_s = b_s - eta_tracker.get_value() * db_s
             a_plot, b_plot = scaled_to_plot(a_s, b_s)
 
-            new_line = line_from_params(a_plot, b_plot, color=ORANGE, width=6)
-            new_errs = error_group(a_plot, b_plot)
-
-            da_disp, db_disp = grads_display(a_plot, b_plot)
-            new_readout = info_readout(i, a_plot, b_plot)
-
+            focus_on(yhat_group, r"Step 4: Update $(a,b)$ with $\eta$", ORANGE)
+            # Update both the formula values and the status bar simultaneously
             self.play(
-                cur_line.animate.set_color(GREY_B).set_opacity(0.6).set_stroke(width=3),
-                run_time=0.2,
-            )
-            trail.add(cur_line)
-            self.play(Create(new_line), run_time=0.4)
-
-            self.play(
-                Transform(errs, new_errs),
                 a_val.animate.set_value(a_plot),
                 b_val.animate.set_value(b_plot),
-                grad_a_val.animate.set_value(da_disp),
-                grad_b_val.animate.set_value(db_disp),
-                cost_val.animate.set_value(mse(a_plot, b_plot)),
-                Transform(readout, new_readout),
-                run_time=0.45,
+                status.animate.become(
+                    Tex(
+                        f"n = {n}  •  Iteration {i}  •  a = {a_plot:.3f}, b = {b_plot:.3f}  •  MSE = {mse(a_plot, b_plot):.3f}",
+                        font_size=26,
+                    ).move_to(status_spacer.get_center())
+                ),
+                run_time=T_NUM,
             )
+            restore_all()
+            self.wait(T_WAIT)
+
+            # gentle decay once
+            if i == 3:
+                self.play(
+                    eta_tracker.animate.set_value(eta_tracker.get_value() * 0.7),
+                    run_time=0.35,
+                )
+
+            # Draw line & update residuals + cost
+            new_line = line_from_params(a_plot, b_plot, color=ORANGE, width=6)
+            if cur_line is not None:
+                self.play(
+                    cur_line.animate.set_color(GREY_B)
+                    .set_opacity(0.6)
+                    .set_stroke(width=3),
+                    run_time=0.28,
+                )
+                trail.add(cur_line)
+                if len(trail) > MAX_TRAIL:
+                    self.play(FadeOut(trail[0], run_time=0.14))
+                    trail.remove(trail[0])
+            self.play(Create(new_line), run_time=T_LINE)
+
+            focus_on(cost_group, r"Step 2: Cost $J(a,b)$", GREEN_E)
+            new_errs = residual_segments(a_plot, b_plot)
+            if len(errs) == 0:
+                self.play(Create(new_errs), run_time=T_RES)
+                errs = new_errs
+            else:
+                self.play(Transform(errs, new_errs), run_time=T_RES)
+            self.play(cost_val.animate.set_value(mse(a_plot, b_plot)), run_time=T_COST)
+            restore_all()
+            self.wait(T_WAIT)
+
+            # Readout (lower area) & MSE point
+            self.play(
+                Transform(readout, info_readout(i, a_plot, b_plot)), run_time=0.35
+            )
+            add_mse_point(i, a_plot, b_plot)
+
+            # Histogram update
+            target_hist = residual_histogram_group(a_plot, b_plot)
+            self.play(Transform(hist, target_hist), run_time=T_HIST)
 
             cur_line = new_line
-            self.wait(0.05)
 
-        # -------- End Visuals --------
-        # 1) Remove ALL orange lines & residuals
-        self.play(FadeOut(trail), FadeOut(cur_line), FadeOut(errs))
+        # ---------------- Polished Ending ----------------
+        # Fade trail & residuals; highlight final line and final stats
+        if len(trail) > 0:
+            self.play(FadeOut(trail), run_time=0.3)
+        if len(errs) > 0:
+            self.play(FadeOut(errs), run_time=0.3)
 
-        # 2) Keep the true GREEN line
-        true_line = Line(
-            axes.c2p(0, true_m * 0 + true_b),
-            axes.c2p(10, true_m * 10 + true_b),
-            color=GREEN,
-            stroke_width=5,
+        if cur_line is not None:
+            final_line = cur_line.copy().set_color(BLUE_E).set_stroke(width=7)
+            self.play(Transform(cur_line, final_line), run_time=0.45)
+
+        final_text = readout.copy().set_color(GREEN_E)
+        self.play(Transform(readout, final_text), run_time=0.35)
+
+        set_step_label(r"Finished", GREEN_E)
+
+        # Keep final state
+        self.add(
+            graph_cell,
+            formulas_col,
+            bl_cell,  # histogram + axis labels only
+            br_cell,  # mse + axis labels only
+            mse_graph,
+            status,
+            eta_label,
+            step_label,
+            spacer,
+            status_spacer,
         )
-        self.play(Create(true_line))
-
-        # 3) Final y-hat shows the last numbers (BLUE, layout fixed)
-        self.play(
-            a_val.animate.set_value(true_m),
-            b_val.animate.set_value(true_b),
-        )
-
-        # 4) OPTIONAL: trail of the data-generating function y = true_m x + true_b (GREEN)
-        #    A sequence of small green dots fades in from left to right along the true line.
-        trail_dots = VGroup()
-        samples = 90
-        for k in range(samples):
-            x = 0 + (10 - 0) * (k / (samples - 1))
-            y = true_m * x + true_b
-            d = Dot(axes.c2p(x, y), radius=0.03, color=GREEN)
-            d.set_opacity(0.85)
-            trail_dots.add(d)
-        # ensure left-to-right animation order
-        trail_dots.submobjects.sort(key=lambda d: d.get_center()[0])
-
-        self.play(
-            LaggedStart(*[FadeIn(d) for d in trail_dots], lag_ratio=0.02, run_time=1.4)
-        )
-
-        # Keep a clean final frame: points, axes, green line, green trail, formulas + readout
-        self.add(axes, true_line, trail_dots, formula_grid, readout)
         self.wait(1.4)
