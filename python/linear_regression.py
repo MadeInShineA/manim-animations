@@ -460,15 +460,15 @@ class LinearRegression(Scene):
             anims = []
             for grp in all_groups:
                 if grp is target:
-                    anims.append(grp.animate.set_opacity(1.0).set_color(FOCUS_COL[grp]))
+                    anims.append(grp.animate.set_opacity(1.0))
                 else:
-                    anims.append(grp.animate.set_opacity(0.25).set_color(BASE_COL[grp]))
+                    anims.append(grp.animate.set_opacity(0.25))
             self.play(*anims, run_time=T_FOCUS)
 
         def restore_all():
             self.play(
                 *[
-                    grp.animate.set_opacity(1.0).set_color(BASE_COL[grp])
+                    grp.animate.set_opacity(1.0)
                     for grp in all_groups
                 ],
                 run_time=T_RESTORE,
