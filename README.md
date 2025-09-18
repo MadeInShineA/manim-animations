@@ -53,5 +53,10 @@ https://github.com/user-attachments/assets/c401ad60-3da7-4600-9d4a-2f5a30ac4945
 
 https://github.com/user-attachments/assets/9ef36780-0f7c-465a-86c3-1076356a5962
 
+## Linear regression (Gradient descent)
+
+
+https://github.com/user-attachments/assets/7fc870b6-5a40-44d2-8321-13e7a3947bb3
+
 
 
