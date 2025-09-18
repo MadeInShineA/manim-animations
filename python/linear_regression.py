@@ -212,13 +212,22 @@ class LinearRegression(Scene):
                 x_range=[0, 10, 1],
                 y_range=[0, 10, 1],
                 tips=False,
-                axis_config={"include_numbers": True, "font_size": 26},
+                axis_config={
+                    "include_numbers": True,
+                    "font_size": 26,
+                    "stroke_width": 2,  # Slightly thicker axis lines
+                },
             )
             .add_coordinates()
             .scale(1.3)  # Much bigger
         )
-        dots = VGroup(*[Dot(axes.c2p(x, y), radius=0.065) for x, y in zip(xs, ys)])
-        graph_cell = VGroup(axes, dots)
+        x_label = Tex(r"x", font_size=32)
+        y_label = Tex(r"y", font_size=32).rotate(PI/2)
+        x_label.next_to(axes.x_axis, DOWN, buff=0.2)
+        y_label.next_to(axes.y_axis, LEFT, buff=0.2)
+        axes_labels = VGroup(x_label, y_label)
+        dots = VGroup(*[Dot(axes.c2p(x, y), radius=0.065, color=BLUE_C, fill_opacity=0.7) for x, y in zip(xs, ys)])
+        graph_cell = VGroup(axes, axes_labels, dots)
 
         def line_from_params(m, b, color=ORANGE, width=6):
             x0, x1 = axes.x_range[0], axes.x_range[1]
@@ -239,27 +248,27 @@ class LinearRegression(Scene):
             return g
 
         # --- Top-right: Formulas (larger and centered vertically in their cell)
-        yhat_left = MathTex(r"\hat{y} = ", font_size=48).set_color(BLUE_C)
-        a_val = DecimalNumber(-0.20, num_decimal_places=2, color=BLUE_C, font_size=48)
-        ax_tex = MathTex(r"x + ", font_size=48).set_color(BLUE_C)
-        b_val = DecimalNumber(0.80, num_decimal_places=2, color=BLUE_C, font_size=48)
-        yhat_group = VGroup(yhat_left, a_val, ax_tex, b_val).arrange(RIGHT, buff=0.08)
+        yhat_left = MathTex(r"\hat{y} = ", font_size=58).set_color(BLUE_C)
+        a_val = DecimalNumber(-0.20, num_decimal_places=2, color=BLUE_C, font_size=58)
+        ax_tex = MathTex(r"x + ", font_size=58).set_color(BLUE_C)
+        b_val = DecimalNumber(0.80, num_decimal_places=2, color=BLUE_C, font_size=58)
+        yhat_group = VGroup(yhat_left, a_val, ax_tex, b_val).arrange(RIGHT, buff=0.10)
 
         cost_left = MathTex(
             r"J(a,b) = \frac{1}{n}\sum_{i=1}^{n}\big(y_i - (a x_i + b)\big)^2",
-            font_size=42,
+            font_size=52,
         ).set_color(GREEN_C)
-        cost_eq = MathTex(r"=", font_size=42).set_color(GREEN_C)
-        cost_val = DecimalNumber(0.0, num_decimal_places=3, color=GREEN_C, font_size=42)
+        cost_eq = MathTex(r"=", font_size=52).set_color(GREEN_C)
+        cost_val = DecimalNumber(0.0, num_decimal_places=3, color=GREEN_C, font_size=52)
         cost_group = VGroup(cost_left, cost_eq, cost_val).arrange(RIGHT, buff=0.10)
 
         grad_a_left = MathTex(
             r"\frac{\partial J}{\partial a} = -\frac{2}{n}\sum x_i\big(y_i - (a x_i + b)\big)",
-            font_size=38,
+            font_size=48,
         ).set_color(YELLOW_C)
-        grad_a_eq = MathTex(r"=", font_size=38).set_color(YELLOW_C)
+        grad_a_eq = MathTex(r"=", font_size=48).set_color(YELLOW_C)
         grad_a_val = DecimalNumber(
-            0.0, num_decimal_places=3, color=YELLOW_C, font_size=38
+            0.0, num_decimal_places=3, color=YELLOW_C, font_size=48
         )
         grad_a_group = VGroup(grad_a_left, grad_a_eq, grad_a_val).arrange(
             RIGHT, buff=0.10
@@ -267,11 +276,11 @@ class LinearRegression(Scene):
 
         grad_b_left = MathTex(
             r"\frac{\partial J}{\partial b} = -\frac{2}{n}\sum \big(y_i - (a x_i + b)\big)",
-            font_size=38,
+            font_size=48,
         ).set_color(YELLOW_C)
-        grad_b_eq = MathTex(r"=", font_size=38).set_color(YELLOW_C)
+        grad_b_eq = MathTex(r"=", font_size=48).set_color(YELLOW_C)
         grad_b_val = DecimalNumber(
-            0.0, num_decimal_places=3, color=YELLOW_C, font_size=38
+            0.0, num_decimal_places=3, color=YELLOW_C, font_size=48
         )
         grad_b_group = VGroup(grad_b_left, grad_b_eq, grad_b_val).arrange(
             RIGHT, buff=0.10
@@ -279,22 +288,24 @@ class LinearRegression(Scene):
 
         formulas_col = VGroup(
             yhat_group, cost_group, grad_a_group, grad_b_group
-        ).arrange(DOWN, buff=0.3, aligned_edge=LEFT)
+        ).arrange(DOWN, buff=0.3)
 
-        # --- Bottom-left: Histogram (maximize size)
+        # --- Bottom-left: Histogram (moderate size)
         res_axes = Axes(
             x_range=[-4, 4, 2],
             y_range=[0, hist_ymax, hist_step],
             tips=False,
             axis_config={"include_numbers": True, "font_size": 22},
-        ).scale(1.3)  # Much bigger
+            x_axis_config={"include_tip": False},
+            y_axis_config={"include_tip": False},
+        ).scale(1.0)  # Moderate size
 
         # Create axis labels with bigger font
-        x_label = Tex(r"Residual", font_size=28)
-        y_label = Tex(r"Count", font_size=28)
-        x_label.next_to(res_axes.x_axis, DOWN, buff=0.05)
-        y_label.next_to(res_axes.y_axis, LEFT, buff=0.05).rotate(PI / 2)
-        res_axis_labels = VGroup(x_label, y_label)
+        res_x_label = Tex(r"Residual", font_size=28)
+        res_y_label = Tex(r"Count", font_size=28)
+        res_x_label.next_to(res_axes.x_axis, DOWN, buff=0.1)
+        res_y_label.next_to(res_axes.y_axis, LEFT, buff=0.1).rotate(PI / 2)
+        res_axis_labels = VGroup(res_x_label, res_y_label)
 
         bl_cell = VGroup(res_axes, res_axis_labels)
 
@@ -328,7 +339,7 @@ class LinearRegression(Scene):
                 )
             return bars
 
-        # --- Bottom-right: MSE plot (maximize size)
+        # --- Bottom-right: MSE plot (moderate size)
         steps = 5
         y_max_mse = max(10.0, mse0 * 1.4)
         y_step_mse = round(y_max_mse / 5)  # Round the step size
@@ -341,13 +352,13 @@ class LinearRegression(Scene):
                 "font_size": 20,
                 "decimal_number_config": {"num_decimal_places": 0},
             },  # No decimals
-        ).scale(1.3)  # Much bigger
+        ).scale(1.0)  # Moderate size
 
         # Create axis labels with bigger font
         mse_x_label = Tex(r"Iteration", font_size=28)
         mse_y_label = Tex(r"MSE", font_size=28)
-        mse_x_label.next_to(mse_axes.x_axis, DOWN, buff=0.05)
-        mse_y_label.next_to(mse_axes.y_axis, LEFT, buff=0.05).rotate(PI / 2)
+        mse_x_label.next_to(mse_axes.x_axis, DOWN, buff=0.1)
+        mse_y_label.next_to(mse_axes.y_axis, LEFT, buff=0.1).rotate(PI / 2)
         mse_axis_labels = VGroup(mse_x_label, mse_y_label)
 
         br_cell = VGroup(mse_axes, mse_axis_labels)
@@ -357,36 +368,36 @@ class LinearRegression(Scene):
         tl_cell = VGroup(graph_cell)
         tr_cell = VGroup(formulas_col)
 
-        # Create top row with normal arrangement first
-        top_row = VGroup(tl_cell, tr_cell).arrange(RIGHT, buff=0.2, aligned_edge=UP)
+        # Create top row with center alignment for formulas
+        top_row = VGroup(tl_cell, tr_cell).arrange(RIGHT, buff=0.2)
 
-        # Center formulas vertically within their allocated space in the right cell
-        # The formulas should be centered in their own cell, not moved to the graph's position
-        formulas_col.move_to(tr_cell.get_center())
-
-        bottom_row = VGroup(bl_cell, br_cell).arrange(RIGHT, buff=0.2, aligned_edge=UP)
+        bottom_row = VGroup(bl_cell, br_cell).arrange(RIGHT, buff=0.2)
         grid = VGroup(top_row, bottom_row).arrange(DOWN, buff=0.15, aligned_edge=LEFT)
 
         # Calculate maximum available space and scale aggressively to fill screen
-        available_width = config.frame_width - 0.05  # Almost no padding
+        available_width = config.frame_width - 0.1  # More padding for visibility
         available_height = (
             config.frame_height
             - (title.height + spacer.height + status_spacer.height + 0.15)
-            - 0.05  # Almost no padding
+            - 0.4  # More padding to ensure bottom axes are visible
         )
 
         # Scale to fill the maximum available space
         width_scale = available_width / grid.width
         height_scale = available_height / grid.height
         scale_factor = (
-            min(width_scale, height_scale) * 0.99
-        )  # Use 99% of available space
+            min(width_scale, height_scale) * 0.85  # Use 85% of available space for better fit
+        )
 
         grid.scale(scale_factor)
 
         # Center the grid in available space
         grid.next_to(status_spacer, DOWN, buff=0.03)
         grid.set_x(0)
+
+        # Center formulas within the top-right cell after scaling
+        tr_cell_center = tr_cell.get_center()
+        formulas_col.move_to(tr_cell_center)
 
         # --- Initial step + status text
         set_step_label(r"Step 1: Model $\hat{y} = a x + b$", BLUE_E)
@@ -399,6 +410,7 @@ class LinearRegression(Scene):
 
         # --- Reveal scaffolding
         self.play(Create(axes), run_time=0.7)
+        self.add(axes_labels)
         self.play(LaggedStart(*[FadeIn(d) for d in dots], lag_ratio=0.02, run_time=1.0))
         self.play(
             LaggedStart(
@@ -516,9 +528,21 @@ class LinearRegression(Scene):
 
         # ---- Optimization loop (5 steps)
         for i in range(1, 5 + 1):
-            da_s, db_s = grads_scaled(a_s, b_s)
-            a_disp, b_disp = scaled_to_plot(a_s, b_s)
-            da_disp, db_disp = grads_display(a_disp, b_disp)
+            # Perform gradient calculation and display twice in the first iteration
+            if i == 1:
+                # First pass
+                da_s, db_s = grads_scaled(a_s, b_s)
+                a_disp, b_disp = scaled_to_plot(a_s, b_s)
+                da_disp, db_disp = grads_display(a_disp, b_disp)
+
+                # Second pass (identical to first)
+                da_s, db_s = grads_scaled(a_s, b_s)
+                a_disp, b_disp = scaled_to_plot(a_s, b_s)
+                da_disp, db_disp = grads_display(a_disp, b_disp)
+            else:
+                da_s, db_s = grads_scaled(a_s, b_s)
+                a_disp, b_disp = scaled_to_plot(a_s, b_s)
+                da_disp, db_disp = grads_display(a_disp, b_disp)
 
             focus_on(
                 grad_a_group, r"Step 3: Gradient $\partial J/\partial a$", YELLOW_E
@@ -634,5 +658,6 @@ class LinearRegression(Scene):
             step_label,
             spacer,
             status_spacer,
+            axes_labels,
         )
         self.wait(1.4)
