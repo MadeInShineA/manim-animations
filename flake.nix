@@ -28,6 +28,7 @@
             python312
             ruff
             pyright
+            texliveFull
           ];
 
           env.LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath (
@@ -37,7 +38,7 @@
               zlib
               libGL
               libxcb
-              xorg.libX11
+              libX11
               glib
             ]
           );
