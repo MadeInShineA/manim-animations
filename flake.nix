@@ -1,9 +1,11 @@
 {
-  description = "Development Environment";
+  description = "Manim development environment (uv workflow)";
+
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
   };
+
   outputs =
     {
       self,
@@ -15,33 +17,30 @@
       system:
       let
         pkgs = import nixpkgs {
-          system = system;
-          config = {
-            allowUnfree = true;
-          };
+          inherit system;
+          config.allowUnfree = true;
         };
       in
       {
         devShells.default = pkgs.mkShell {
           packages = with pkgs; [
             uv
-            python314
+            python312
             ruff
             pyright
-            manim
           ];
 
-          /*
-            env.LD_LIBRARY_PATH =
-              with pkgs;
-              lib.makeLibraryPath [
-                stdenv.cc.cc.lib
-                libxcb
-                libGL
-                glib
-              ];
-          */
-
+          env.LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath (
+            with pkgs;
+            [
+              stdenv.cc.cc.lib
+              zlib
+              libGL
+              libxcb
+              xorg.libX11
+              glib
+            ]
+          );
         };
       }
     );
