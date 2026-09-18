@@ -1,6 +1,8 @@
-/venv
-/__pycache__
+.venv/
+*/__pycache__
 **/partial_movie_files
 /media/Tex
 /media/texts
 **/480p15
+.direnv
+__pycache__
